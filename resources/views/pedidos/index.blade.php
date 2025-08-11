@@ -1254,7 +1254,30 @@ input[type="checkbox"]:after {
 @parent
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.all.min.js"></script>
 <script>
+    // Función para guardar la posición del scroll
+    function saveScrollPosition() {
+        sessionStorage.setItem('scrollPosition', window.scrollY);
+    }
+
+    // Función para restaurar la posición del scroll
+    function restoreScrollPosition() {
+        var scrollPosition = sessionStorage.getItem('scrollPosition');
+        if (scrollPosition) {
+            window.scrollTo(0, parseInt(scrollPosition));
+            sessionStorage.removeItem('scrollPosition'); // Limpiar después de usar
+        }
+    }
+
+    // Función personalizada para recargar conservando el scroll
+    function reloadWithScrollPosition() {
+        saveScrollPosition();
+        window.location.reload();
+    }
+
     $(document).ready(function () {
+        // Restaurar posición del scroll al cargar la página
+        restoreScrollPosition();
+        
         // Debug: Verificar que el modal existe
         console.log('Modal WhatsApp encontrado:', $('#whatsappModal').length > 0);
         console.log('Botones WhatsApp encontrados:', $('.btn-whatsapp-mensaje').length);
@@ -1775,7 +1798,7 @@ input[type="checkbox"]:after {
                             confirmButtonText: 'Cerrar'
                         }).then(() => {
                             // Recargar la página para mostrar los cambios
-                            window.location.reload();
+                            reloadWithScrollPosition();
                         });
                     } else {
                         throw new Error(response.message || 'Error desconocido');
@@ -1963,6 +1986,7 @@ input[type="checkbox"]:after {
 
         // Manejar cambios en los filtros - Filtrado automático
         $('#filtroAno, #filtroMes, #empresa_id').change(function() {
+            saveScrollPosition(); // Guardar posición del scroll
             const params = new URLSearchParams();
             
             // Mantener el filtro de fecha específica si está activo
@@ -1990,6 +2014,7 @@ input[type="checkbox"]:after {
 
         // Botón "Actual"
         $('#actualButton').click(function() {
+            saveScrollPosition(); // Guardar posición del scroll
             const now = new Date();
             const params = new URLSearchParams();
             params.set('ano', now.getFullYear());
@@ -2005,6 +2030,7 @@ input[type="checkbox"]:after {
 
         // Botón "Mostrar Todos los Pedidos"
         $('#mostrarTodosButton').click(function() {
+            saveScrollPosition(); // Guardar posición del scroll
             const params = new URLSearchParams();
             params.set('todos', '1');
             
@@ -2036,7 +2062,7 @@ input[type="checkbox"]:after {
                 success: function(response) {
                     $('#confirmarEliminarModal').modal('hide');
                     // Recargar la página o actualizar la tabla
-                    window.location.reload();
+                    reloadWithScrollPosition();
                 },
                 error: function(xhr) {
                     alert('Error al eliminar el pedido');
@@ -2079,7 +2105,7 @@ input[type="checkbox"]:after {
                         position: 'top-end'
                     }).then(() => {
                         // Recargar la página para mostrar los cambios
-                        window.location.reload();
+                        reloadWithScrollPosition();
                     });
                 },
                 error: function(xhr) {
@@ -2465,7 +2491,7 @@ Su opinión es muy importante para nosotros.
                                     showConfirmButton: false
                                 }).then(() => {
                                     // Recargar la página para actualizar la vista
-                                    window.location.reload();
+                                    reloadWithScrollPosition();
                                 });
                             }
                         },
@@ -2527,7 +2553,7 @@ Su opinión es muy importante para nosotros.
                                     showConfirmButton: false
                                 }).then(() => {
                                     // Recargar la página para actualizar la vista
-                                    window.location.reload();
+                                    reloadWithScrollPosition();
                                 });
                             }
                         },
@@ -2592,7 +2618,7 @@ Su opinión es muy importante para nosotros.
                                     showConfirmButton: false
                                 }).then(() => {
                                     // Recargar la página para actualizar la vista
-                                    window.location.reload();
+                                    reloadWithScrollPosition();
                                 });
                             }
                         },
@@ -2668,7 +2694,7 @@ Su opinión es muy importante para nosotros.
                         showConfirmButton: false
                     }).then(() => {
                         // Recargar la página para mostrar los cambios
-                        window.location.reload();
+                        reloadWithScrollPosition();
                     });
                 },
                 error: function(xhr) {
@@ -2844,7 +2870,7 @@ Su opinión es muy importante para nosotros.
                             showConfirmButton: false
                         }).then(() => {
                             // Recargar la página para actualizar la vista
-                            window.location.reload();
+                            reloadWithScrollPosition();
                         });
                     }
                 },
@@ -2870,6 +2896,24 @@ Su opinión es muy importante para nosotros.
                     submitButton.prop('disabled', false).text(originalText);
                 }
             });
+        });
+
+        // Agregar eventos para conservar scroll en navegación
+        // Enlaces de paginación y otros enlaces que cambien la página
+        $(document).on('click', 'a[href*="pedidos"]', function() {
+            // Solo guardar si el enlace va a la misma página de pedidos
+            var href = $(this).attr('href');
+            if (href && href.includes('pedidos') && !href.includes('create') && !href.includes('edit') && !href.includes('#')) {
+                saveScrollPosition();
+            }
+        });
+
+        // Eventos para formularios que puedan recargar la página
+        $(document).on('submit', 'form', function() {
+            var action = $(this).attr('action');
+            if (action && (action.includes('pedidos') || action === '#')) {
+                saveScrollPosition();
+            }
         });
     });
 </script>
