@@ -30,7 +30,7 @@ use App\Models\MensajePredeterminado;
         <h3 class="card-title"><i class="fas fa-filter"></i> FILTROS</h3>
     </div>
     <div class="card-body">
-        <form action="{{ route('historiales_clinicos.recordatorios-consulta') }}" method="GET" id="filtroForm">
+        <form action="{{ route('mensajes.recordatorios') }}" method="GET" id="filtroForm">
             <div class="row">
                 @if($isUserAdmin)
                     <div class="col-md-4">
@@ -58,7 +58,7 @@ use App\Models\MensajePredeterminado;
                     <button type="submit" class="btn btn-info me-2">
                         <i class="fas fa-search"></i> FILTRAR
                     </button>
-                    <a href="{{ route('historiales_clinicos.recordatorios-consulta') }}" class="btn btn-secondary">
+                    <a href="{{ route('mensajes.recordatorios') }}" class="btn btn-secondary">
                         <i class="fas fa-times"></i> LIMPIAR
                     </a>
                 </div>
