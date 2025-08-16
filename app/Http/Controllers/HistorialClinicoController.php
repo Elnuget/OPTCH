@@ -1022,14 +1022,19 @@ class HistorialClinicoController extends Controller
                     // La edad que cumplirá será la actual + 1
                     $edadCumplir = $edadActual + 1;
                     
+                    // Crear la fecha de cumpleaños para el año actual
+                    $cumpleanosEsteAno = \Carbon\Carbon::create($añoActual, $fechaNacimiento->month, $fechaNacimiento->day);
+                    
                     return [
                         'id' => $paciente->id,
                         'nombres' => $paciente->nombres,
                         'apellidos' => $paciente->apellidos,
                         'nombre_completo' => strtoupper($paciente->nombres . ' ' . $paciente->apellidos),
                         'fecha_nacimiento' => $fechaNacimiento->format('d/m/Y'),
+                        'fecha_cumpleanos' => $cumpleanosEsteAno->format('d/m/Y'),
                         'dia_cumpleanos' => $fechaNacimiento->format('d'),
-                        'dia_nombre' => $fechaNacimiento->locale('es')->format('l'), // Nombre del día
+                        'mes_cumpleanos' => $fechaNacimiento->locale('es')->format('F'),
+                        'dia_nombre' => $cumpleanosEsteAno->locale('es')->format('l'), // Nombre del día del cumpleaños este año
                         'edad_actual' => $edadActual,
                         'edad_cumplir' => $edadCumplir,
                         'celular' => $paciente->celular,

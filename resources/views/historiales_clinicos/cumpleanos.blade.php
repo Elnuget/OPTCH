@@ -91,7 +91,7 @@ use App\Models\MensajePredeterminado;
                             @if($isUserAdmin)
                                 <th>EMPRESA</th>
                             @endif
-                            <th>ÚLTIMA CONSULTA</th>
+                            <th>FECHA DE CUMPLEAÑOS</th>
                             <th>ACCIONES</th>
                         </tr>
                     </thead>
@@ -130,7 +130,13 @@ use App\Models\MensajePredeterminado;
                                     </span>
                                 </td>
                             @endif
-                            <td>{{ $paciente['ultima_consulta'] }}</td>
+                            <td>
+                                <span class="badge badge-info" style="font-size: 0.95em;">
+                                    {{ $paciente['fecha_cumpleanos'] }}
+                                </span>
+                                <br>
+                                <small class="text-muted">{{ strtoupper($paciente['dia_nombre']) }}</small>
+                            </td>
                             <td>
                                 <div class="btn-group">
                                     @if($paciente['celular'])
