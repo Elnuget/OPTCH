@@ -668,21 +668,43 @@ class HistorialClinicoController extends Controller
 
     /**
      * Muestra la vista de cumpleaños del mes.
-     *
-     * @return \Illuminate\Http\Response
      */
-    public function cumpleanos()
+    public function cumpleanos(Request $request)
     {
         // Obtener mes actual
         $mes_actual = now()->translatedFormat('F');
         
-        // Obtener los pacientes que cumplen años este mes
-        $cumpleaneros = $this->obtenerCumpleanerosMes();
+        // Verificar si el usuario está asociado a una empresa y no es admin
+        $userEmpresaId = null;
+        $isUserAdmin = auth()->user()->is_admin;
         
-        return view('historiales_clinicos.cumpleanos', [
-            'cumpleaneros' => $cumpleaneros,
-            'mes_actual' => $mes_actual
-        ]);
+        if (!$isUserAdmin) {
+            $userEmpresaId = auth()->user()->empresa_id;
+        }
+
+        // Obtener empresas para el filtro según el tipo de usuario
+        if ($isUserAdmin) {
+            $empresas = Empresa::orderBy('nombre')->get();
+        } else {
+            $empresas = Empresa::where('id', $userEmpresaId)->get();
+        }
+        
+        // Obtener los pacientes que cumplen años este mes
+        $cumpleaneros = $this->obtenerCumpleanerosMes($request->get('empresa_id'));
+        
+        // Preparar filtros
+        $filtros = [
+            'empresa_id' => $request->get('empresa_id')
+        ];
+        
+        return view('historiales_clinicos.cumpleanos', compact(
+            'cumpleaneros',
+            'mes_actual',
+            'empresas',
+            'userEmpresaId',
+            'isUserAdmin',
+            'filtros'
+        ));
     }
 
     public function listaCumpleanos()
@@ -847,7 +869,7 @@ class HistorialClinicoController extends Controller
         }
     }
 
-    public function recordatoriosConsulta()
+    public function recordatoriosConsulta(Request $request)
     {
         // Obtener el mes y año actuales
         $fechaActual = now();
@@ -857,12 +879,38 @@ class HistorialClinicoController extends Controller
         // Obtener el nombre del mes en español
         $mes_actual = $fechaActual->locale('es')->format('F Y');
         
-        // Obtener todas las consultas programadas para el mes actual
-        $proximasConsultas = HistorialClinico::whereNotNull('proxima_consulta')
+        // Verificar si el usuario está asociado a una empresa y no es admin
+        $userEmpresaId = null;
+        $isUserAdmin = auth()->user()->is_admin;
+        
+        if (!$isUserAdmin) {
+            $userEmpresaId = auth()->user()->empresa_id;
+        }
+
+        // Obtener empresas para el filtro según el tipo de usuario
+        if ($isUserAdmin) {
+            $empresas = Empresa::orderBy('nombre')->get();
+        } else {
+            $empresas = Empresa::where('id', $userEmpresaId)->get();
+        }
+        
+        // Construir query base para consultas programadas
+        $query = HistorialClinico::with('empresa')
+            ->whereNotNull('proxima_consulta')
             ->whereMonth('proxima_consulta', $mesActual)
-            ->whereYear('proxima_consulta', $anoActual)
-            ->orderBy('proxima_consulta', 'asc')
-            ->get();
+            ->whereYear('proxima_consulta', $anoActual);
+            
+        // Aplicar filtro de empresa si se especifica
+        if ($request->filled('empresa_id')) {
+            $query->where('empresa_id', $request->get('empresa_id'));
+        }
+        
+        // Si el usuario no es admin, aplicar filtro de empresa automáticamente
+        if (!$isUserAdmin && $userEmpresaId) {
+            $query->where('empresa_id', $userEmpresaId);
+        }
+        
+        $proximasConsultas = $query->orderBy('proxima_consulta', 'asc')->get();
             
         // Estructurar datos para la vista
         $consultas = $proximasConsultas->map(function($consulta) use ($fechaActual) {
@@ -876,6 +924,8 @@ class HistorialClinicoController extends Controller
                 'celular' => $consulta->celular,
                 'fecha_consulta' => $fechaConsulta->format('d/m/Y'),
                 'dias_restantes' => $diasRestantes,
+                'empresa_id' => $consulta->empresa_id,
+                'empresa_nombre' => $consulta->empresa ? $consulta->empresa->nombre : 'Sin empresa',
                 'ultima_consulta' => $consulta->fecha ? \Carbon\Carbon::parse($consulta->fecha)->format('d/m/Y') : 'SIN CONSULTAS'
             ];
         });
@@ -883,7 +933,20 @@ class HistorialClinicoController extends Controller
         // Obtener mensajes predeterminados usando el modelo
         $mensajePredeterminado = \App\Models\MensajePredeterminado::obtenerMensaje('consulta');
 
-        return view('mensajes.recordatorios', compact('consultas', 'mes_actual', 'mensajePredeterminado'));
+        // Preparar filtros
+        $filtros = [
+            'empresa_id' => $request->get('empresa_id')
+        ];
+
+        return view('mensajes.recordatorios', compact(
+            'consultas', 
+            'mes_actual', 
+            'mensajePredeterminado',
+            'empresas',
+            'userEmpresaId',
+            'isUserAdmin',
+            'filtros'
+        ));
     }
 
     /**
@@ -924,16 +987,33 @@ class HistorialClinicoController extends Controller
     /**
      * Obtiene los pacientes que cumplen años en el mes actual.
      *
+     * @param int|null $empresaId Filtro opcional por empresa
      * @return \Illuminate\Support\Collection
      */
-    private function obtenerCumpleanerosMes()
+    private function obtenerCumpleanerosMes($empresaId = null)
     {
         try {
             $mesActual = now()->format('m');
             $añoActual = now()->format('Y');
             
-            $cumpleaneros = HistorialClinico::whereRaw('MONTH(fecha_nacimiento) = ?', [$mesActual])
-                ->orderByRaw('DAY(fecha_nacimiento)')
+            $query = HistorialClinico::whereRaw('MONTH(fecha_nacimiento) = ?', [$mesActual]);
+            
+            // Aplicar filtro de empresa si se especifica
+            if ($empresaId) {
+                $query->where('empresa_id', $empresaId);
+            }
+            
+            // Verificar si el usuario está asociado a una empresa y no es admin
+            $isUserAdmin = auth()->user()->is_admin;
+            
+            if (!$isUserAdmin) {
+                $userEmpresaId = auth()->user()->empresa_id;
+                if ($userEmpresaId) {
+                    $query->where('empresa_id', $userEmpresaId);
+                }
+            }
+            
+            $cumpleaneros = $query->orderByRaw('DAY(fecha_nacimiento)')
                 ->get()
                 ->map(function ($paciente) use ($añoActual) {
                     $fechaNacimiento = \Carbon\Carbon::parse($paciente->fecha_nacimiento);
@@ -953,6 +1033,8 @@ class HistorialClinicoController extends Controller
                         'edad_actual' => $edadActual,
                         'edad_cumplir' => $edadCumplir,
                         'celular' => $paciente->celular,
+                        'empresa_id' => $paciente->empresa_id,
+                        'empresa_nombre' => $paciente->empresa ? $paciente->empresa->nombre : 'Sin empresa',
                         'ultima_consulta' => $paciente->fecha ? \Carbon\Carbon::parse($paciente->fecha)->format('d/m/Y') : 'SIN CONSULTAS'
                     ];
                 });

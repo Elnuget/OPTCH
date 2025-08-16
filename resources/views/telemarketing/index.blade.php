@@ -42,7 +42,7 @@ use App\Models\MensajePredeterminado;
                     <div class="card-body">
                         <form method="GET" id="filtroForm">
                             <div class="row">
-                                <div class="col-md-3 mb-3">
+                                <div class="col-md-2 mb-3">
                                     <label for="tipo_cliente" class="form-label">TIPO DE CLIENTE:</label>
                                     <select name="tipo_cliente" id="tipo_cliente" class="form-control">
                                         <option value="">TODOS</option>
@@ -50,17 +50,39 @@ use App\Models\MensajePredeterminado;
                                         <option value="paciente" {{ request('tipo_cliente') == 'paciente' ? 'selected' : '' }}>SOLO PACIENTES</option>
                                     </select>
                                 </div>
-                                <div class="col-md-3 mb-3">
+                                @if($isUserAdmin)
+                                    <div class="col-md-2 mb-3">
+                                        <label for="empresa_id" class="form-label">EMPRESA:</label>
+                                        <select name="empresa_id" id="empresa_id" class="form-control">
+                                            <option value="">TODAS LAS EMPRESAS</option>
+                                            @foreach($empresas as $empresa)
+                                                <option value="{{ $empresa->id }}" 
+                                                    {{ $filtrosActivos['empresa_id'] == $empresa->id ? 'selected' : '' }}>
+                                                    {{ strtoupper($empresa->nombre) }}
+                                                </option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                @else
+                                    <div class="col-md-2 mb-3">
+                                        <label class="form-label">EMPRESA:</label>
+                                        <input type="text" class="form-control" 
+                                               value="{{ $empresas->first()->nombre ?? 'SIN EMPRESA ASIGNADA' }}" 
+                                               readonly>
+                                        <input type="hidden" name="empresa_id" value="{{ $userEmpresaId }}">
+                                    </div>
+                                @endif
+                                <div class="col-md-2 mb-3">
                                     <label for="fecha_inicio" class="form-label">FECHA INICIO:</label>
                                     <input type="date" name="fecha_inicio" id="fecha_inicio" class="form-control" value="{{ request('fecha_inicio') }}">
                                     <small class="text-muted">Desde esta fecha</small>
                                 </div>
-                                <div class="col-md-3 mb-3">
+                                <div class="col-md-2 mb-3">
                                     <label for="fecha_fin" class="form-label">FECHA FIN:</label>
                                     <input type="date" name="fecha_fin" id="fecha_fin" class="form-control" value="{{ request('fecha_fin') }}">
                                     <small class="text-muted">Hasta esta fecha</small>
                                 </div>
-                                <div class="col-md-3 mb-3 d-flex align-items-end">
+                                <div class="col-md-4 mb-3 d-flex align-items-end">
                                     <div class="btn-group w-100" role="group">
                                         <button type="submit" class="btn btn-primary">
                                             <i class="fas fa-search"></i> FILTRAR
@@ -193,7 +215,9 @@ use App\Models\MensajePredeterminado;
                             <th>APELLIDOS</th>
                             <th>TELÉFONO</th>
                             <th>TIPO</th>
-                            <th>EMPRESA</th>
+                            @if($isUserAdmin)
+                                <th>EMPRESA</th>
+                            @endif
                             <th>ÚLTIMO PEDIDO</th>
                             <th>ACCIONES</th>
                         </tr>
@@ -215,7 +239,13 @@ use App\Models\MensajePredeterminado;
                                     {{ strtoupper($cliente->tipo) }}
                                 </span>
                             </td>
-                            <td>{{ $cliente->empresa ? strtoupper($cliente->empresa->nombre) : 'SIN EMPRESA' }}</td>
+                            @if($isUserAdmin)
+                                <td>
+                                    <span class="badge badge-secondary">
+                                        {{ strtoupper($cliente->empresa ? $cliente->empresa->nombre : 'SIN EMPRESA') }}
+                                    </span>
+                                </td>
+                            @endif
                             <td>
                                 @if($cliente->ultimo_pedido)
                                     <small class="text-muted">{{ $cliente->ultimo_pedido->format('d/m/Y') }}</small>
@@ -1230,6 +1260,7 @@ $(document).ready(function() {
     // Botón Limpiar Filtros
     $('#limpiarFiltrosButton').click(function() {
         $('#tipo_cliente').val('');
+        $('#empresa_id').val('');
         $('#fecha_inicio').val('');
         $('#fecha_fin').val('');
     });

@@ -17,39 +17,20 @@ class TelemarketingController extends Controller
 {
     public function index(Request $request)
     {
+        // Verificar si el usuario está asociado a una empresa y no es admin
+        $userEmpresaId = null;
+        $isUserAdmin = auth()->user()->is_admin;
+        
+        if (!$isUserAdmin) {
+            $userEmpresaId = auth()->user()->empresa_id;
+        }
 
-        // Unión de clientes y pacientes
-        $clientesQuery = DB::table('pedidos')
-            ->select(
-                'cliente as nombre',
-                DB::raw('NULL as apellidos'),
-                'celular',
-                DB::raw("'cliente' as tipo"),
-                'empresa_id',
-                DB::raw('MAX(fecha) as ultimo_pedido'),
-                'id'
-            )
-            ->whereNotNull('cliente')
-            ->where('cliente', '!=', '')
-            ->whereNotNull('celular')
-            ->where('celular', '!=', '')
-            ->groupBy('cliente', 'celular', 'empresa_id', 'id');
-
-        $pacientesQuery = DB::table('historiales_clinicos')
-            ->select(
-                'nombres as nombre',
-                'apellidos',
-                'celular',
-                DB::raw("'paciente' as tipo"),
-                'empresa_id',
-                DB::raw('MAX(fecha) as ultimo_pedido'),
-                'id'
-            )
-            ->whereNotNull('nombres')
-            ->where('nombres', '!=', '')
-            ->whereNotNull('celular')
-            ->where('celular', '!=', '')
-            ->groupBy('nombres', 'apellidos', 'celular', 'empresa_id', 'id');
+        // Obtener empresas para el filtro según el tipo de usuario
+        if ($isUserAdmin) {
+            $empresas = Empresa::orderBy('nombre')->get();
+        } else {
+            $empresas = Empresa::where('id', $userEmpresaId)->get();
+        }
 
         // Obtener clientes únicos de pedidos
         $clientes = DB::table('pedidos')
@@ -75,6 +56,16 @@ class TelemarketingController extends Controller
         }
         if ($request->filled('fecha_fin')) {
             $clientes = $clientes->where('pedidos.fecha', '<=', $request->get('fecha_fin'));
+        }
+
+        // Aplicar filtro de empresa para clientes
+        if ($request->filled('empresa_id')) {
+            $clientes = $clientes->where('pedidos.empresa_id', $request->get('empresa_id'));
+        }
+
+        // Si el usuario no es admin, aplicar filtro de empresa automáticamente
+        if (!$isUserAdmin && $userEmpresaId) {
+            $clientes = $clientes->where('pedidos.empresa_id', $userEmpresaId);
         }
 
         $clientes = $clientes->groupBy('pedidos.cliente', 'pedidos.celular', 'pedidos.empresa_id', 'empresas.nombre');
@@ -103,6 +94,16 @@ class TelemarketingController extends Controller
         }
         if ($request->filled('fecha_fin')) {
             $pacientes = $pacientes->where('historiales_clinicos.fecha', '<=', $request->get('fecha_fin'));
+        }
+
+        // Aplicar filtro de empresa para pacientes
+        if ($request->filled('empresa_id')) {
+            $pacientes = $pacientes->where('historiales_clinicos.empresa_id', $request->get('empresa_id'));
+        }
+
+        // Si el usuario no es admin, aplicar filtro de empresa automáticamente
+        if (!$isUserAdmin && $userEmpresaId) {
+            $pacientes = $pacientes->where('historiales_clinicos.empresa_id', $userEmpresaId);
         }
 
         $pacientes = $pacientes->groupBy('historiales_clinicos.nombres', 'historiales_clinicos.apellidos', 'historiales_clinicos.celular', 'historiales_clinicos.empresa_id', 'empresas.nombre');
@@ -171,9 +172,16 @@ class TelemarketingController extends Controller
             'tipo_cliente' => $request->get('tipo_cliente'),
             'fecha_inicio' => $request->get('fecha_inicio'),
             'fecha_fin' => $request->get('fecha_fin'),
+            'empresa_id' => $request->get('empresa_id'),
         ];
 
-        return view('telemarketing.index', compact('clientes', 'filtrosActivos'));
+        return view('telemarketing.index', compact(
+            'clientes', 
+            'filtrosActivos',
+            'empresas',
+            'userEmpresaId',
+            'isUserAdmin'
+        ));
     }
 
     public function enviarMensaje(Request $request, $clienteId)

@@ -24,6 +24,49 @@ use App\Models\MensajePredeterminado;
 @stop
 
 @section('content')
+<!-- Filtros -->
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title"><i class="fas fa-filter"></i> FILTROS</h3>
+    </div>
+    <div class="card-body">
+        <form action="{{ route('historiales_clinicos.recordatorios-consulta') }}" method="GET" id="filtroForm">
+            <div class="row">
+                @if($isUserAdmin)
+                    <div class="col-md-4">
+                        <label for="empresa_id" class="form-label">EMPRESA:</label>
+                        <select name="empresa_id" id="empresa_id" class="form-control">
+                            <option value="">TODAS LAS EMPRESAS</option>
+                            @foreach($empresas as $empresa)
+                                <option value="{{ $empresa->id }}" 
+                                    {{ request('empresa_id') == $empresa->id ? 'selected' : '' }}>
+                                    {{ strtoupper($empresa->nombre) }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+                @else
+                    <div class="col-md-4">
+                        <label class="form-label">EMPRESA:</label>
+                        <input type="text" class="form-control" 
+                               value="{{ $empresas->first()->nombre ?? 'SIN EMPRESA ASIGNADA' }}" 
+                               readonly>
+                        <input type="hidden" name="empresa_id" value="{{ $userEmpresaId }}">
+                    </div>
+                @endif
+                <div class="col-md-8 d-flex align-items-end">
+                    <button type="submit" class="btn btn-info me-2">
+                        <i class="fas fa-search"></i> FILTRAR
+                    </button>
+                    <a href="{{ route('historiales_clinicos.recordatorios-consulta') }}" class="btn btn-secondary">
+                        <i class="fas fa-times"></i> LIMPIAR
+                    </a>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
 <div class="card">
     <div class="card-header d-flex justify-content-between align-items-center">
         <h3 class="card-title">CONSULTAS PROGRAMADAS PARA {{ strtoupper($mes_actual) }}</h3>
@@ -46,6 +89,9 @@ use App\Models\MensajePredeterminado;
                             <th>APELLIDOS</th>
                             <th>DÍAS RESTANTES</th>
                             <th>CELULAR</th>
+                            @if($isUserAdmin)
+                                <th>EMPRESA</th>
+                            @endif
                             <th>ÚLTIMA CONSULTA</th>
                             <th>ACCIONES</th>
                         </tr>
@@ -74,6 +120,13 @@ use App\Models\MensajePredeterminado;
                                     <span class="badge badge-warning">SIN CELULAR</span>
                                 @endif
                             </td>
+                            @if($isUserAdmin)
+                                <td>
+                                    <span class="badge badge-secondary">
+                                        {{ strtoupper($consulta['empresa_nombre'] ?? 'SIN EMPRESA') }}
+                                    </span>
+                                </td>
+                            @endif
                             <td>{{ $consulta['ultima_consulta'] }}</td>
                             <td>
                                 <div class="btn-group">
