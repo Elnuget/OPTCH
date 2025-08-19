@@ -110,8 +110,10 @@ class PedidosController extends Controller
                 'usuario',
                 'encuesta', // Asegurarnos de que la columna encuesta se cargue explícitamente
                 'metodo_envio',
+                'tipo_lente', // Agregar el campo tipo_lente
                 'reclamo', // Agregar el campo reclamo
-                'urgente' // Agregar el campo urgente
+                'urgente', // Agregar el campo urgente
+                'observacion' // Agregar el campo observacion
             ])
             ->orderBy('urgente', 'desc') // Pedidos urgentes primero
             ->orderBy('numero_orden', 'desc') // Luego por número de orden
@@ -1583,6 +1585,134 @@ class PedidosController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Error al eliminar el reclamo',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Agregar una observación a un pedido
+     * 
+     * @param \Illuminate\Http\Request $request
+     * @param int $id
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function agregarObservacion(Request $request, $id)
+    {
+        try {
+            $request->validate([
+                'observacion' => 'required|string|max:1000'
+            ], [
+                'observacion.required' => 'La observación es obligatoria',
+                'observacion.max' => 'La observación no puede exceder 1000 caracteres'
+            ]);
+
+            $pedido = Pedido::findOrFail($id);
+            
+            // Verificar si ya tiene una observación
+            if (!empty($pedido->observacion)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Este pedido ya tiene una observación registrada'
+                ], 400);
+            }
+
+            $pedido->observacion = $request->observacion;
+            $pedido->save();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Observación agregada exitosamente'
+            ]);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error de validación',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al agregar la observación',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Actualizar una observación de un pedido
+     * 
+     * @param \Illuminate\Http\Request $request
+     * @param int $id
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function actualizarObservacion(Request $request, $id)
+    {
+        try {
+            $request->validate([
+                'observacion' => 'required|string|max:1000'
+            ], [
+                'observacion.required' => 'La observación es obligatoria',
+                'observacion.max' => 'La observación no puede exceder 1000 caracteres'
+            ]);
+
+            $pedido = Pedido::findOrFail($id);
+            
+            $pedido->observacion = $request->observacion;
+            $pedido->save();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Observación actualizada exitosamente'
+            ]);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error de validación',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al actualizar la observación',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Quitar una observación de un pedido
+     * 
+     * @param int $id
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function quitarObservacion($id)
+    {
+        try {
+            $pedido = Pedido::findOrFail($id);
+            
+            // Verificar si tiene una observación
+            if (empty($pedido->observacion)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Este pedido no tiene una observación registrada'
+                ], 400);
+            }
+
+            $pedido->observacion = null;
+            $pedido->save();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Observación eliminada exitosamente'
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al eliminar la observación',
                 'error' => $e->getMessage()
             ], 500);
         }

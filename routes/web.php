@@ -164,6 +164,11 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
     Route::post('/pedidos/{id}/agregar-reclamo', [PedidosController::class, 'agregarReclamo'])->name('pedidos.agregar-reclamo');
     Route::delete('/pedidos/{id}/quitar-reclamo', [PedidosController::class, 'quitarReclamo'])->name('pedidos.quitar-reclamo');
 
+    // Rutas para observaciones
+    Route::post('/pedidos/{id}/agregar-observacion', [PedidosController::class, 'agregarObservacion'])->name('pedidos.agregar-observacion');
+    Route::put('/pedidos/{id}/actualizar-observacion', [PedidosController::class, 'actualizarObservacion'])->name('pedidos.actualizar-observacion');
+    Route::delete('/pedidos/{id}/quitar-observacion', [PedidosController::class, 'quitarObservacion'])->name('pedidos.quitar-observacion');
+
     // Rutas para marcar/desmarcar urgente
     Route::post('/pedidos/{id}/marcar-urgente', [PedidosController::class, 'marcarUrgente'])->name('pedidos.marcar-urgente');
     Route::delete('/pedidos/{id}/desmarcar-urgente', [PedidosController::class, 'desmarcarUrgente'])->name('pedidos.desmarcar-urgente');

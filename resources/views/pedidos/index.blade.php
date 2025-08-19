@@ -34,6 +34,21 @@
             background-color: #f8d7da !important; /* Fondo rojo claro */
         }
 
+        /* Estilos para filas con observaciones */
+        .observacion-row {
+            background-color: #d1ecf1 !important; /* Fondo celeste claro */
+            border-left: 4px solid #17a2b8 !important; /* Borde izquierdo celeste */
+        }
+
+        .observacion-row:hover {
+            background-color: #bee5eb !important; /* Fondo un poco más oscuro al hacer hover */
+        }
+
+        /* Asegurar que el texto sea legible en las filas con observación */
+        .observacion-row td {
+            color: #0c5460 !important;
+        }
+
         /* Estilos para filas urgentes */
         .urgente-row {
             background-color: #fff3cd !important; /* Fondo amarillo claro */
@@ -46,8 +61,18 @@
             border-left: 4px solid #ffc107 !important;
         }
 
+        /* Estilos para filas urgentes con observación */
+        .urgente-con-observacion {
+            background: linear-gradient(90deg, #fff3cd 50%, #d1ecf1 50%) !important;
+            border-left: 4px solid #ffc107 !important;
+        }
+
         .bg-warning-light {
             background-color: #fff3cd !important;
+        }
+
+        .bg-info-light {
+            background-color: #d1ecf1 !important;
         }
     </style>
 
@@ -247,10 +272,18 @@
                 </thead>
                 <tbody>
                     @foreach ($pedidos as $pedido)
+                    {{-- Debug: Pedido {{ $pedido->id }} - Reclamo: {{ $pedido->reclamo ?? 'NULL' }} - Observación: {{ $pedido->observacion ?? 'NULL' }} - Urgente: {{ $pedido->urgente ? 'SÍ' : 'NO' }} --}}
                     <tr class="{{ 
+                        // Prioridad 1: Urgente + Reclamo
                         $pedido->urgente && (!is_null($pedido->reclamo) && trim($pedido->reclamo) !== '') ? 'bg-warning-light urgente-row reclamo-row urgente-con-reclamo' : 
+                        // Prioridad 2: Urgente + Observación
+                        ($pedido->urgente && (!is_null($pedido->observacion) && trim($pedido->observacion) !== '') ? 'bg-warning-light urgente-row observacion-row urgente-con-observacion' :
+                        // Prioridad 3: Solo Urgente
                         ($pedido->urgente ? 'bg-warning-light urgente-row' : 
-                        (!is_null($pedido->reclamo) && trim($pedido->reclamo) !== '' ? 'bg-danger-light reclamo-row' : ''))
+                        // Prioridad 4: Solo Reclamo
+                        ((!is_null($pedido->reclamo) && trim($pedido->reclamo) !== '') ? 'bg-danger-light reclamo-row' : 
+                        // Prioridad 5: Solo Observación
+                        ((!is_null($pedido->observacion) && trim($pedido->observacion) !== '') ? 'bg-info-light observacion-row' : ''))))
                     }}">
                         <td class="checkbox-cell">
                             <input type="checkbox" name="pedidos_selected[]" value="{{ $pedido->id }}" class="pedido-checkbox">
@@ -441,6 +474,31 @@
                                     @endif
                                 </div>
 
+                                <!-- Botón de Observación -->
+                                <div class="me-1">
+                                    {{-- Debug: Observación value: {{ $pedido->observacion ?? 'NULL' }} --}}
+                                    @if(is_null($pedido->observacion) || trim($pedido->observacion) === '')
+                                        <button type="button" class="btn btn-outline-info btn-sm btn-observacion" 
+                                            title="Agregar Observación del Pedido" 
+                                            data-pedido-id="{{ $pedido->id }}"
+                                            data-cliente="{{ $pedido->cliente }}"
+                                            data-toggle="tooltip">
+                                            <i class="fas fa-sticky-note me-1"></i>
+                                            <span class="d-none d-lg-inline">Observación</span>
+                                        </button>
+                                    @else
+                                        <button type="button" class="btn btn-info btn-sm btn-ver-observacion" 
+                                            title="Ver Observación Existente" 
+                                            data-pedido-id="{{ $pedido->id }}"
+                                            data-cliente="{{ $pedido->cliente }}"
+                                            data-observacion="{{ $pedido->observacion }}"
+                                            data-toggle="tooltip">
+                                            <i class="fas fa-eye me-1"></i>
+                                            <span class="d-none d-lg-inline">Ver Obs.</span>
+                                        </button>
+                                    @endif
+                                </div>
+
                                 <!-- Botón de marcar/desmarcar URGENTE -->
                                 <div class="me-1">
                                     @if($pedido->urgente)
@@ -535,6 +593,49 @@
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
                     <button type="submit" class="btn btn-danger">Guardar Reclamo</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{{-- Modal para agregar/ver observación --}}
+<div class="modal fade" id="observacionModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="observacionModalTitle">Agregar Observación</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <form id="observacionForm">
+                @csrf
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="cliente-observacion"><strong>Cliente:</strong></label>
+                        <p id="cliente-observacion" class="form-control-plaintext"></p>
+                    </div>
+                    <div class="form-group">
+                        <label for="observacion"><strong>Observación del Pedido:</strong></label>
+                        <textarea 
+                            id="observacion" 
+                            name="observacion" 
+                            class="form-control" 
+                            rows="5" 
+                            placeholder="Agregue una observación sobre el pedido..."
+                            maxlength="1000"></textarea>
+                        <small class="form-text text-muted">
+                            Máximo 1000 caracteres. 
+                            <span id="contador-caracteres-obs">0/1000</span>
+                        </small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-info" id="btnGuardarObservacion">Guardar Observación</button>
+                    <button type="button" class="btn btn-warning" id="btnEditarObservacion" style="display: none;">Editar Observación</button>
+                    <button type="button" class="btn btn-danger" id="btnEliminarObservacion" style="display: none;">Eliminar Observación</button>
                 </div>
             </form>
         </div>
@@ -697,6 +798,25 @@
 /* Asegurar que el texto sea legible en las filas con reclamo */
 .reclamo-row td {
     color: #721c24 !important;
+}
+
+/* Estilos para filas con observaciones */
+.observacion-row {
+    background-color: #d1ecf1 !important; /* Fondo celeste claro */
+    border-left: 4px solid #17a2b8 !important; /* Borde izquierdo celeste */
+}
+
+.observacion-row:hover {
+    background-color: #bee5eb !important; /* Fondo un poco más oscuro al hacer hover */
+}
+
+.bg-info-light {
+    background-color: #d1ecf1 !important;
+}
+
+/* Asegurar que el texto sea legible en las filas con observación */
+.observacion-row td {
+    color: #0c5460 !important;
 }
 
 /* Estilos para el botón de WhatsApp */
@@ -938,6 +1058,54 @@ input[type="checkbox"]:after {
 
 /* Estilos para el contador de caracteres del reclamo */
 #contador-caracteres {
+    font-weight: bold;
+}
+
+/* Estilos para botones de observación */
+.btn-observacion {
+    transition: all 0.2s ease;
+}
+
+.btn-observacion:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+.btn-ver-observacion {
+    transition: all 0.2s ease;
+}
+
+.btn-ver-observacion:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+/* Estilos para el modal de observación */
+#observacionModal .modal-content {
+    border-radius: 8px;
+}
+
+#observacionModal .modal-header {
+    background-color: #17a2b8;
+    color: white;
+}
+
+#observacionModal .modal-header .close {
+    color: white;
+    opacity: 1;
+}
+
+#observacionModal .modal-header .close:hover {
+    opacity: 0.8;
+}
+
+#observacion {
+    resize: vertical;
+    min-height: 120px;
+}
+
+/* Estilos para el contador de caracteres de observación */
+#contador-caracteres-obs {
     font-weight: bold;
 }
 
@@ -2658,6 +2826,209 @@ Su opinión es muy importante para nosotros.
             }
         });
 
+        // Contador de caracteres para el textarea de observación
+        $('#observacion').on('input', function() {
+            var length = $(this).val().length;
+            $('#contador-caracteres-obs').text(length + '/1000');
+            
+            // Cambiar color si se acerca al límite
+            if (length > 900) {
+                $('#contador-caracteres-obs').addClass('text-danger').removeClass('text-muted');
+            } else {
+                $('#contador-caracteres-obs').addClass('text-muted').removeClass('text-danger');
+            }
+        });
+
+        // Manejar el modal de observaciones - Agregar nueva observación
+        $(document).on('click', '.btn-observacion', function() {
+            var pedidoId = $(this).data('pedido-id');
+            var cliente = $(this).data('cliente');
+            
+            // Configurar el modal para agregar
+            $('#observacionModalTitle').text('Agregar Observación');
+            $('#cliente-observacion').text(cliente);
+            $('#observacionForm').data('pedido-id', pedidoId);
+            $('#observacionForm').data('action', 'add');
+            $('#observacion').val('').prop('readonly', false);
+            $('#contador-caracteres-obs').text('0/1000');
+            
+            // Mostrar/ocultar botones apropiados
+            $('#btnGuardarObservacion').show();
+            $('#btnEditarObservacion').hide();
+            $('#btnEliminarObservacion').hide();
+            
+            // Mostrar el modal
+            $('#observacionModal').modal('show');
+        });
+
+        // Manejar el modal de observaciones - Ver observación existente
+        $(document).on('click', '.btn-ver-observacion', function() {
+            var pedidoId = $(this).data('pedido-id');
+            var cliente = $(this).data('cliente');
+            var observacion = $(this).data('observacion');
+            
+            // Configurar el modal para ver
+            $('#observacionModalTitle').text('Observación del Pedido');
+            $('#cliente-observacion').text(cliente);
+            $('#observacionForm').data('pedido-id', pedidoId);
+            $('#observacionForm').data('action', 'view');
+            $('#observacion').val(observacion).prop('readonly', true);
+            $('#contador-caracteres-obs').text(observacion.length + '/1000');
+            
+            // Mostrar/ocultar botones apropiados
+            $('#btnGuardarObservacion').hide();
+            $('#btnEditarObservacion').show();
+            $('#btnEliminarObservacion').show();
+            
+            // Mostrar el modal
+            $('#observacionModal').modal('show');
+        });
+
+        // Manejar el botón de editar observación
+        $('#btnEditarObservacion').click(function() {
+            $('#observacionModalTitle').text('Editar Observación');
+            $('#observacion').prop('readonly', false);
+            $('#observacionForm').data('action', 'edit');
+            
+            // Cambiar botones
+            $(this).hide();
+            $('#btnEliminarObservacion').hide();
+            $('#btnGuardarObservacion').show().text('Actualizar Observación');
+        });
+
+        // Manejar el botón de eliminar observación
+        $('#btnEliminarObservacion').click(function() {
+            var pedidoId = $('#observacionForm').data('pedido-id');
+            var cliente = $('#cliente-observacion').text();
+            
+            // Confirmar la eliminación
+            Swal.fire({
+                title: '¿Eliminar Observación?',
+                html: `¿Está seguro que desea eliminar la observación del pedido de <strong>${cliente}</strong>?<br><br><small class="text-warning">Esta acción no se puede deshacer.</small>`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'Sí, eliminar',
+                cancelButtonText: 'Cancelar'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Proceder a eliminar la observación
+                    $.ajax({
+                        url: '/pedidos/' + pedidoId + '/quitar-observacion',
+                        method: 'DELETE',
+                        headers: {
+                            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                        },
+                        success: function(response) {
+                            if (response.success) {
+                                $('#observacionModal').modal('hide');
+                                Swal.fire({
+                                    icon: 'success',
+                                    title: '¡Observación Eliminada!',
+                                    text: 'La observación se ha eliminado correctamente.',
+                                    timer: 2000,
+                                    showConfirmButton: false
+                                }).then(() => {
+                                    reloadWithScrollPosition();
+                                });
+                            }
+                        },
+                        error: function(xhr) {
+                            let errorMessage = 'Error al eliminar la observación';
+                            if (xhr.responseJSON && xhr.responseJSON.message) {
+                                errorMessage = xhr.responseJSON.message;
+                            }
+                            
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Error',
+                                text: errorMessage
+                            });
+                        }
+                    });
+                }
+            });
+        });
+
+        // Manejar el envío del formulario de observación
+        $('#observacionForm').on('submit', function(e) {
+            e.preventDefault();
+            var pedidoId = $(this).data('pedido-id');
+            var action = $(this).data('action');
+            var observacion = $('#observacion').val().trim();
+            
+            if (observacion.length === 0) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Campo requerido',
+                    text: 'Debe ingresar una observación.'
+                });
+                return;
+            }
+            
+            var url = (action === 'edit') ? 
+                '/pedidos/' + pedidoId + '/actualizar-observacion' : 
+                '/pedidos/' + pedidoId + '/agregar-observacion';
+            
+            var method = (action === 'edit') ? 'PUT' : 'POST';
+            
+            // Enviar la observación al servidor
+            $.ajax({
+                url: url,
+                method: method,
+                headers: {
+                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                },
+                data: {
+                    observacion: observacion
+                },
+                success: function(response) {
+                    $('#observacionModal').modal('hide');
+                    
+                    var mensaje = (action === 'edit') ? 
+                        '¡Observación Actualizada!' : 
+                        '¡Observación Guardada!';
+                    
+                    var texto = (action === 'edit') ? 
+                        'La observación se ha actualizado correctamente.' : 
+                        'La observación se ha guardado correctamente.';
+                    
+                    Swal.fire({
+                        icon: 'success',
+                        title: mensaje,
+                        text: texto,
+                        timer: 2000,
+                        showConfirmButton: false
+                    }).then(() => {
+                        reloadWithScrollPosition();
+                    });
+                },
+                error: function(xhr) {
+                    let errorMessage = 'Error al guardar la observación';
+                    if (xhr.responseJSON && xhr.responseJSON.message) {
+                        errorMessage = xhr.responseJSON.message;
+                    }
+                    
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: errorMessage
+                    });
+                }
+            });
+        });
+
+        // Limpiar modal de observación cuando se cierre
+        $('#observacionModal').on('hidden.bs.modal', function () {
+            $('#observacion').val('').prop('readonly', false);
+            $('#contador-caracteres-obs').text('0/1000');
+            $('#btnGuardarObservacion').show().text('Guardar Observación');
+            $('#btnEditarObservacion').hide();
+            $('#btnEliminarObservacion').hide();
+            $(this).removeData('action');
+        });
+
         // Manejar el envío del formulario de reclamo
         $('#reclamoForm').on('submit', function(e) {
             e.preventDefault();
@@ -2675,7 +3046,7 @@ Su opinión es muy importante para nosotros.
             
             // Enviar el reclamo al servidor
             $.ajax({
-                url: '/pedidos/' + pedidoId + '/reclamo',
+                url: '/pedidos/' + pedidoId + '/agregar-reclamo',
                 method: 'POST',
                 headers: {
                     'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
