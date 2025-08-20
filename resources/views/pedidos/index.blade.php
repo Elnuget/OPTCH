@@ -2470,7 +2470,11 @@ input[type="checkbox"]:after {
 • Orden: ${response.numero_orden || 'N/A'}
 • Estado: ${response.estado || 'Listo para retiro'}
 
-🏪 Puede pasar a recogerlos en el horario que más le convenga.
+🏪 *Horarios de atención:*
+• Lunes a viernes: 10:00 a 18:30 hrs
+• Sábados: 10:00 a 15:00 hrs
+
+Puede pasar a recogerlos en el horario que más le convenga.
 
 🔗 *Califica nuestro servicio:*
 ${response.url}
