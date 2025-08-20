@@ -70,6 +70,11 @@ class PedidosController extends Controller
             if ($request->filled('empresa_id')) {
                 $query->where('empresa_id', $request->get('empresa_id'));
             }
+
+            // Aplicar filtro de saldo pendiente si se especifica
+            if ($request->filled('saldo_pendiente') && $request->get('saldo_pendiente') == '1') {
+                $query->where('saldo', '>', 0);
+            }
             
             // Verificar si el usuario está asociado a una empresa y no es admin
             $userEmpresaId = null;
@@ -148,7 +153,10 @@ class PedidosController extends Controller
                 $empresas = auth()->user()->todasLasEmpresas()->sortBy('nombre')->values();
             }
 
-            return view('pedidos.index', compact('pedidos', 'totales', 'empresas', 'userEmpresaId', 'isUserAdmin'));
+            // Verificar si hay filtros activos
+            $filtroSaldoPendienteActivo = $request->filled('saldo_pendiente') && $request->get('saldo_pendiente') == '1';
+
+            return view('pedidos.index', compact('pedidos', 'totales', 'empresas', 'userEmpresaId', 'isUserAdmin', 'filtroSaldoPendienteActivo'));
         } catch (\Exception $e) {
             \Log::error('Error en PedidosController@index: ' . $e->getMessage());
             return back()->with('error', 'Error al cargar los pedidos: ' . $e->getMessage());

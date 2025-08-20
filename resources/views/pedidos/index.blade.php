@@ -198,6 +198,9 @@
                         <button type="button" class="btn btn-warning" id="filtrarReclamos">
                             <i class="fas fa-exclamation-triangle"></i> Reclamos
                         </button>
+                        <button type="button" class="btn btn-danger" id="filtrarSaldoPendiente">
+                            <i class="fas fa-dollar-sign"></i> Saldo Pendiente
+                        </button>
                         <button type="button" class="btn btn-primary" id="avanzarEstado" disabled>
                             <i class="fas fa-forward"></i> Avanzar
                         </button>
@@ -234,6 +237,20 @@
                     <small class="text-info">
                         <i class="fas fa-info-circle"></i> 
                         Mostrando pedidos del {{ \Carbon\Carbon::parse(request('fecha_especifica'))->format('d/m/Y') }}
+                        @if(request()->filled('empresa_id'))
+                            @php
+                                $empresaSeleccionada = $empresas->firstWhere('id', request('empresa_id'));
+                            @endphp
+                            @if($empresaSeleccionada)
+                                en <strong>{{ strtoupper($empresaSeleccionada->nombre) }}</strong>
+                            @endif
+                        @endif
+                    </small>
+                @endif
+                @if(request()->filled('saldo_pendiente') && request()->get('saldo_pendiente') == '1')
+                    <small class="text-warning mt-1 d-block">
+                        <i class="fas fa-dollar-sign"></i> 
+                        Mostrando solo pedidos con saldo pendiente ({{ $pedidos->count() }} encontrados)
                         @if(request()->filled('empresa_id'))
                             @php
                                 $empresaSeleccionada = $empresas->firstWhere('id', request('empresa_id'));
@@ -1248,6 +1265,29 @@ input[type="checkbox"]:after {
 }
 
 #filtrarReclamos.active::after {
+    content: " (Activo)";
+    font-size: 0.8em;
+}
+
+/* Estilos para el botón de filtrar saldo pendiente */
+#filtrarSaldoPendiente {
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+#filtrarSaldoPendiente.active {
+    background-color: #dc3545 !important;
+    border-color: #dc3545 !important;
+    color: white !important;
+    box-shadow: 0 0 10px rgba(220, 53, 69, 0.5);
+}
+
+#filtrarSaldoPendiente:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(220, 53, 69, 0.3);
+}
+
+#filtrarSaldoPendiente.active::after {
     content: " (Activo)";
     font-size: 0.8em;
 }
@@ -3181,6 +3221,44 @@ Su opinión es muy importante para nosotros.
             }
         });
 
+        // Manejar el botón de filtrar saldo pendiente
+        $('#filtrarSaldoPendiente').click(function() {
+            saveScrollPosition(); // Guardar posición del scroll
+            
+            // Mostrar indicador de carga
+            Swal.fire({
+                title: 'Filtrando...',
+                text: 'Buscando pedidos con saldo pendiente',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+            
+            // Obtener parámetros actuales
+            const params = new URLSearchParams(window.location.search);
+            
+            // Verificar si el filtro ya está activo
+            if (params.has('saldo_pendiente') && params.get('saldo_pendiente') === '1') {
+                // Si ya está activo, remover el filtro
+                params.delete('saldo_pendiente');
+                
+                // Construir URL sin el filtro de saldo pendiente
+                let newUrl = '{{ route("pedidos.index") }}';
+                if (params.toString()) {
+                    newUrl += '?' + params.toString();
+                }
+                
+                window.location.href = newUrl;
+            } else {
+                // Si no está activo, agregar el filtro
+                params.set('saldo_pendiente', '1');
+                
+                // Construir URL con el filtro de saldo pendiente
+                window.location.href = '{{ route("pedidos.index") }}?' + params.toString();
+            }
+        });
+
         // Asegurar que el filtro se mantenga después de operaciones de DataTables
         if (typeof pedidosTable !== 'undefined') {
             pedidosTable.on('draw', function() {
@@ -3286,6 +3364,13 @@ Su opinión es muy importante para nosotros.
                 saveScrollPosition();
             }
         });
+
+        // Verificar si el filtro de saldo pendiente está activo al cargar la página
+        @if(request()->filled('saldo_pendiente') && request()->get('saldo_pendiente') == '1')
+            $('#filtrarSaldoPendiente').addClass('active')
+                .html('<i class="fas fa-times"></i> Quitar Filtro Saldo')
+                .attr('title', 'Quitar filtro de saldo pendiente y mostrar todos los pedidos');
+        @endif
     });
 </script>
 @stop
