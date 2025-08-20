@@ -686,7 +686,18 @@ class HistorialClinicoController extends Controller
         if ($isUserAdmin) {
             $empresas = Empresa::orderBy('nombre')->get();
         } else {
-            $empresas = Empresa::where('id', $userEmpresaId)->get();
+            // Para usuarios no admin, obtener todas sus empresas (principal + adicionales)
+            $empresas = auth()->user()->todasLasEmpresas()->sortBy('nombre');
+        }
+        
+        // Validar acceso a empresa para usuarios no administradores
+        if (!$isUserAdmin && $request->filled('empresa_id')) {
+            $empresaId = $request->get('empresa_id');
+            if (!auth()->user()->tieneAccesoAEmpresa($empresaId)) {
+                return redirect()->route('historiales_clinicos.cumpleanos')
+                    ->with('error', 'No tiene acceso a la empresa seleccionada.')
+                    ->with('tipo', 'alert-danger');
+            }
         }
         
         // Obtener los pacientes que cumplen años este mes
@@ -891,7 +902,18 @@ class HistorialClinicoController extends Controller
         if ($isUserAdmin) {
             $empresas = Empresa::orderBy('nombre')->get();
         } else {
-            $empresas = Empresa::where('id', $userEmpresaId)->get();
+            // Para usuarios no admin, obtener todas sus empresas (principal + adicionales)
+            $empresas = auth()->user()->todasLasEmpresas()->sortBy('nombre');
+        }
+        
+        // Validar acceso a empresa para usuarios no administradores
+        if (!$isUserAdmin && $request->filled('empresa_id')) {
+            $empresaId = $request->get('empresa_id');
+            if (!auth()->user()->tieneAccesoAEmpresa($empresaId)) {
+                return redirect()->route('mensajes.recordatorios')
+                    ->with('error', 'No tiene acceso a la empresa seleccionada.')
+                    ->with('tipo', 'alert-danger');
+            }
         }
         
         // Construir query base para consultas programadas
@@ -905,9 +927,13 @@ class HistorialClinicoController extends Controller
             $query->where('empresa_id', $request->get('empresa_id'));
         }
         
-        // Si el usuario no es admin, aplicar filtro de empresa automáticamente
-        if (!$isUserAdmin && $userEmpresaId) {
-            $query->where('empresa_id', $userEmpresaId);
+        // Si el usuario no es admin, aplicar filtro de empresa automáticamente solo si no hay filtro específico
+        if (!$isUserAdmin && !$request->filled('empresa_id')) {
+            // Obtener IDs de todas las empresas del usuario
+            $empresasIds = auth()->user()->todasLasEmpresas()->pluck('id')->toArray();
+            if (!empty($empresasIds)) {
+                $query->whereIn('empresa_id', $empresasIds);
+            }
         }
         
         $proximasConsultas = $query->orderBy('proxima_consulta', 'asc')->get();
@@ -1006,10 +1032,11 @@ class HistorialClinicoController extends Controller
             // Verificar si el usuario está asociado a una empresa y no es admin
             $isUserAdmin = auth()->user()->is_admin;
             
-            if (!$isUserAdmin) {
-                $userEmpresaId = auth()->user()->empresa_id;
-                if ($userEmpresaId) {
-                    $query->where('empresa_id', $userEmpresaId);
+            if (!$isUserAdmin && !$empresaId) {
+                // Obtener IDs de todas las empresas del usuario para filtrar automáticamente
+                $empresasIds = auth()->user()->todasLasEmpresas()->pluck('id')->toArray();
+                if (!empty($empresasIds)) {
+                    $query->whereIn('empresa_id', $empresasIds);
                 }
             }
             

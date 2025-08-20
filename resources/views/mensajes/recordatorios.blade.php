@@ -45,6 +45,19 @@ use App\Models\MensajePredeterminado;
                             @endforeach
                         </select>
                     </div>
+                @elseif($empresas->count() > 1)
+                    <div class="col-md-4">
+                        <label for="empresa_id" class="form-label">EMPRESA:</label>
+                        <select name="empresa_id" id="empresa_id" class="form-control">
+                            <option value="">TODAS MIS EMPRESAS</option>
+                            @foreach($empresas as $empresa)
+                                <option value="{{ $empresa->id }}" 
+                                    {{ request('empresa_id') == $empresa->id ? 'selected' : '' }}>
+                                    {{ strtoupper($empresa->nombre) }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
                 @else
                     <div class="col-md-4">
                         <label class="form-label">EMPRESA:</label>

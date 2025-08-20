@@ -29,7 +29,18 @@ class TelemarketingController extends Controller
         if ($isUserAdmin) {
             $empresas = Empresa::orderBy('nombre')->get();
         } else {
-            $empresas = Empresa::where('id', $userEmpresaId)->get();
+            // Para usuarios no admin, obtener todas sus empresas (principal + adicionales)
+            $empresas = auth()->user()->todasLasEmpresas()->sortBy('nombre');
+        }
+
+        // Validar acceso a empresa para usuarios no administradores
+        if (!$isUserAdmin && $request->filled('empresa_id')) {
+            $empresaId = $request->get('empresa_id');
+            if (!auth()->user()->tieneAccesoAEmpresa($empresaId)) {
+                return redirect()->route('telemarketing.index')
+                    ->with('error', 'No tiene acceso a la empresa seleccionada.')
+                    ->with('tipo', 'alert-danger');
+            }
         }
 
         // Obtener clientes únicos de pedidos
@@ -63,9 +74,13 @@ class TelemarketingController extends Controller
             $clientes = $clientes->where('pedidos.empresa_id', $request->get('empresa_id'));
         }
 
-        // Si el usuario no es admin, aplicar filtro de empresa automáticamente
-        if (!$isUserAdmin && $userEmpresaId) {
-            $clientes = $clientes->where('pedidos.empresa_id', $userEmpresaId);
+        // Si el usuario no es admin, aplicar filtro de empresa automáticamente solo si no hay filtro específico
+        if (!$isUserAdmin && !$request->filled('empresa_id')) {
+            // Obtener IDs de todas las empresas del usuario
+            $empresasIds = auth()->user()->todasLasEmpresas()->pluck('id')->toArray();
+            if (!empty($empresasIds)) {
+                $clientes = $clientes->whereIn('pedidos.empresa_id', $empresasIds);
+            }
         }
 
         $clientes = $clientes->groupBy('pedidos.cliente', 'pedidos.celular', 'pedidos.empresa_id', 'empresas.nombre');
@@ -101,9 +116,13 @@ class TelemarketingController extends Controller
             $pacientes = $pacientes->where('historiales_clinicos.empresa_id', $request->get('empresa_id'));
         }
 
-        // Si el usuario no es admin, aplicar filtro de empresa automáticamente
-        if (!$isUserAdmin && $userEmpresaId) {
-            $pacientes = $pacientes->where('historiales_clinicos.empresa_id', $userEmpresaId);
+        // Si el usuario no es admin, aplicar filtro de empresa automáticamente solo si no hay filtro específico
+        if (!$isUserAdmin && !$request->filled('empresa_id')) {
+            // Obtener IDs de todas las empresas del usuario
+            $empresasIds = auth()->user()->todasLasEmpresas()->pluck('id')->toArray();
+            if (!empty($empresasIds)) {
+                $pacientes = $pacientes->whereIn('historiales_clinicos.empresa_id', $empresasIds);
+            }
         }
 
         $pacientes = $pacientes->groupBy('historiales_clinicos.nombres', 'historiales_clinicos.apellidos', 'historiales_clinicos.celular', 'historiales_clinicos.empresa_id', 'empresas.nombre');
