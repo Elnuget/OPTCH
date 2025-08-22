@@ -139,52 +139,87 @@ class InventarioController extends Controller
      */
     public function store(Request $request)
     {
-        $validatedData = $request->validate([
-            'fecha' => 'required|date',
-            'lugar' => 'required|string|max:255',
-            'columna' => 'required|integer',
-            'numero' => 'required|integer',
-            'codigo' => 'required|string|max:255',
-            'cantidad' => 'required|integer|min:0',
-            'empresa_id' => 'nullable|exists:empresas,id',
-            'foto' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:1048576', // 1GB = 1048576 KB
-        ]);
+        try {
+            $validatedData = $request->validate([
+                'fecha' => 'required|date',
+                'lugar' => 'required|string|max:255',
+                'columna' => 'required|integer',
+                'numero' => 'required|integer',
+                'codigo' => 'required|string|max:255',
+                'cantidad' => 'required|integer|min:0',
+                'empresa_id' => 'nullable|exists:empresas,id',
+                'foto' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:1048576', // 1GB = 1048576 KB
+            ]);
 
-        if ($request->input('lugar') === 'new') {
-            $validatedData['lugar'] = $request->input('new_lugar');
-        }
-        
-        // Manejar la subida de la foto
-        if ($request->hasFile('foto')) {
-            $image = $request->file('foto');
-            $filename = time() . '_' . $image->getClientOriginalName();
-            $image->move(public_path('uploads/inventario'), $filename);
-            $validatedData['foto'] = 'uploads/inventario/' . $filename;
-        }
-        
-        // Restricción para usuarios no administradores
-        $user = auth()->user();
-        if (!$user->is_admin) {
-            // Si el usuario no es admin, validar que puede usar la empresa seleccionada
-            if ($validatedData['empresa_id']) {
-                $userEmpresas = $user->todasLasEmpresas();
-                $empresaSeleccionada = $userEmpresas->where('id', $validatedData['empresa_id'])->first();
-                if (!$empresaSeleccionada) {
-                    if (request()->ajax()) {
-                        return response()->json([
-                            'success' => false,
-                            'message' => 'No tiene permisos para asignar este artículo a la empresa seleccionada'
-                        ], 403);
+            if ($request->input('lugar') === 'new') {
+                $validatedData['lugar'] = $request->input('new_lugar');
+            }
+            
+            // Manejar la subida de la foto
+            if ($request->hasFile('foto')) {
+                try {
+                    $image = $request->file('foto');
+                    $filename = time() . '_' . $image->getClientOriginalName();
+                    
+                    // Verificar que el directorio existe
+                    $uploadPath = public_path('uploads/inventario');
+                    if (!file_exists($uploadPath)) {
+                        mkdir($uploadPath, 0755, true);
                     }
-                    return redirect()->back()->withErrors(['empresa_id' => 'No tiene permisos para asignar este artículo a la empresa seleccionada']);
+                    
+                    $image->move($uploadPath, $filename);
+                    $validatedData['foto'] = 'uploads/inventario/' . $filename;
+                } catch (\Exception $e) {
+                    return redirect()->back()->with([
+                        'error' => 'Error',
+                        'mensaje' => 'Error al subir la foto: ' . $e->getMessage(),
+                        'tipo' => 'alert-danger'
+                    ])->withInput();
                 }
             }
-        }
+            
+            // Restricción para usuarios no administradores
+            $user = auth()->user();
+            if (!$user->is_admin) {
+                // Si el usuario no es admin, validar que puede usar la empresa seleccionada
+                if ($validatedData['empresa_id']) {
+                    $userEmpresas = $user->todasLasEmpresas();
+                    $empresaSeleccionada = $userEmpresas->where('id', $validatedData['empresa_id'])->first();
+                    if (!$empresaSeleccionada) {
+                        if (request()->ajax()) {
+                            return response()->json([
+                                'success' => false,
+                                'message' => 'No tiene permisos para asignar este artículo a la empresa seleccionada'
+                            ], 403);
+                        }
+                        return redirect()->back()->with([
+                            'error' => 'Error',
+                            'mensaje' => 'No tiene permisos para asignar este artículo a la empresa seleccionada',
+                            'tipo' => 'alert-danger'
+                        ])->withInput();
+                    }
+                }
+            }
 
-        // Convertir código a mayúsculas
-        $validatedData['codigo'] = strtoupper($validatedData['codigo']);
+            // Convertir código a mayúsculas
+            $validatedData['codigo'] = strtoupper($validatedData['codigo']);
 
-        try {
+            // Verificar si ya existe un artículo con el mismo código en la misma ubicación
+            $existeArticulo = Inventario::where('codigo', $validatedData['codigo'])
+                ->where('lugar', $validatedData['lugar'])
+                ->where('columna', $validatedData['columna'])
+                ->where('numero', $validatedData['numero'])
+                ->where('empresa_id', $validatedData['empresa_id'])
+                ->first();
+
+            if ($existeArticulo) {
+                return redirect()->back()->with([
+                    'error' => 'Error',
+                    'mensaje' => 'Ya existe un artículo con el código "' . $validatedData['codigo'] . '" en esta ubicación',
+                    'tipo' => 'alert-warning'
+                ])->withInput();
+            }
+
             $inventario = Inventario::create($validatedData);
 
             // Si es una petición AJAX, devolver JSON con el ID
@@ -197,24 +232,24 @@ class InventarioController extends Controller
             }
 
             return redirect()->back()->with([
-                'error' => 'Exito',
+                'error' => 'Éxito',
                 'mensaje' => 'Artículo creado exitosamente',
                 'tipo' => 'alert-success'
             ]);
+            
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return redirect()->back()->with([
+                'error' => 'Error de validación',
+                'mensaje' => 'Por favor corrige los errores en el formulario',
+                'tipo' => 'alert-danger'
+            ])->withErrors($e->errors())->withInput();
+            
         } catch (\Exception $e) {
-            // Si es una petición AJAX, devolver JSON
-            if (request()->ajax()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Error al crear el artículo: ' . $e->getMessage()
-                ], 422);
-            }
-
             return redirect()->back()->with([
                 'error' => 'Error',
-                'mensaje' => 'Artículo no se ha creado. Detalle: ' . $e->getMessage(),
+                'mensaje' => 'Error al crear el artículo: ' . $e->getMessage(),
                 'tipo' => 'alert-danger'
-            ]);
+            ])->withInput();
         }
     }
 
@@ -279,32 +314,67 @@ class InventarioController extends Controller
      */
     public function update(Request $request, $id)
     {
-        $validatedData = $request->validate([
-            'fecha' => 'required|date',
-            'lugar' => 'required|string|max:255',
-            'columna' => 'required|integer',
-            'numero' => 'required|integer',
-            'codigo' => 'required|string|max:255',
-            'valor' => 'nullable|numeric',
-            'cantidad' => 'required|integer',
-            'empresa_id' => 'nullable|exists:empresas,id',
-            'foto' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:1048576', // 1GB = 1048576 KB
-        ]);
-
         try {
+            $validatedData = $request->validate([
+                'fecha' => 'required|date',
+                'lugar' => 'required|string|max:255',
+                'columna' => 'required|integer',
+                'numero' => 'required|integer',
+                'codigo' => 'required|string|max:255',
+                'valor' => 'nullable|numeric',
+                'cantidad' => 'required|integer',
+                'empresa_id' => 'nullable|exists:empresas,id',
+                'foto' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:1048576', // 1GB = 1048576 KB
+            ]);
+
             $inventario = Inventario::findOrFail($id);
+            
+            // Convertir código a mayúsculas
+            $validatedData['codigo'] = strtoupper($validatedData['codigo']);
+            
+            // Verificar si ya existe otro artículo con el mismo código en la misma ubicación (excepto el actual)
+            $existeArticulo = Inventario::where('codigo', $validatedData['codigo'])
+                ->where('lugar', $validatedData['lugar'])
+                ->where('columna', $validatedData['columna'])
+                ->where('numero', $validatedData['numero'])
+                ->where('empresa_id', $validatedData['empresa_id'])
+                ->where('id', '!=', $id)
+                ->first();
+
+            if ($existeArticulo) {
+                return redirect()->route('inventario.edit', $id)->with([
+                    'error' => 'Error',
+                    'mensaje' => 'Ya existe otro artículo con el código "' . $validatedData['codigo'] . '" en esta ubicación',
+                    'tipo' => 'alert-warning'
+                ])->withInput();
+            }
             
             // Manejar la subida de la foto
             if ($request->hasFile('foto')) {
-                // Eliminar la foto anterior si existe
-                if ($inventario->foto && file_exists(public_path($inventario->foto))) {
-                    unlink(public_path($inventario->foto));
+                try {
+                    // Eliminar la foto anterior si existe
+                    if ($inventario->foto && file_exists(public_path($inventario->foto))) {
+                        unlink(public_path($inventario->foto));
+                    }
+                    
+                    $image = $request->file('foto');
+                    $filename = time() . '_' . $image->getClientOriginalName();
+                    
+                    // Verificar que el directorio existe
+                    $uploadPath = public_path('uploads/inventario');
+                    if (!file_exists($uploadPath)) {
+                        mkdir($uploadPath, 0755, true);
+                    }
+                    
+                    $image->move($uploadPath, $filename);
+                    $validatedData['foto'] = 'uploads/inventario/' . $filename;
+                } catch (\Exception $e) {
+                    return redirect()->route('inventario.edit', $id)->with([
+                        'error' => 'Error',
+                        'mensaje' => 'Error al subir la foto: ' . $e->getMessage(),
+                        'tipo' => 'alert-danger'
+                    ])->withInput();
                 }
-                
-                $image = $request->file('foto');
-                $filename = time() . '_' . $image->getClientOriginalName();
-                $image->move(public_path('uploads/inventario'), $filename);
-                $validatedData['foto'] = 'uploads/inventario/' . $filename;
             }
             
             // Restricción para usuarios no administradores
@@ -316,7 +386,7 @@ class InventarioController extends Controller
                 $tieneAcceso = $userEmpresas->where('id', $inventario->empresa_id)->count() > 0;
                 
                 if (!$tieneAcceso) {
-                    return back()->with([
+                    return redirect()->route('inventario.index')->with([
                         'error' => 'Error',
                         'mensaje' => 'No tiene permisos para editar este artículo',
                         'tipo' => 'alert-danger'
@@ -327,14 +397,15 @@ class InventarioController extends Controller
                 if ($request->filled('empresa_id')) {
                     $empresaSeleccionada = $userEmpresas->where('id', $request->empresa_id)->first();
                     if (!$empresaSeleccionada) {
-                        return back()->with([
+                        return redirect()->route('inventario.edit', $id)->with([
                             'error' => 'Error',
                             'mensaje' => 'No tiene permisos para asignar este artículo a la empresa seleccionada',
                             'tipo' => 'alert-danger'
-                        ]);
+                        ])->withInput();
                     }
                 }
             }
+            
             $inventario->update($validatedData);
 
             return redirect()->route('inventario.index')->with([
@@ -342,10 +413,25 @@ class InventarioController extends Controller
                 'mensaje' => 'Artículo actualizado exitosamente',
                 'tipo' => 'alert-success'
             ]);
+            
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return redirect()->route('inventario.edit', $id)->with([
+                'error' => 'Error de validación',
+                'mensaje' => 'Por favor corrige los errores en el formulario',
+                'tipo' => 'alert-danger'
+            ])->withErrors($e->errors())->withInput();
+            
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return redirect()->route('inventario.index')->with([
+                'error' => 'Error',
+                'mensaje' => 'El artículo solicitado no existe',
+                'tipo' => 'alert-danger'
+            ]);
+            
         } catch (\Exception $e) {
             return redirect()->route('inventario.index')->with([
                 'error' => 'Error',
-                'mensaje' => 'Artículo no se ha actualizado: ' . $e->getMessage(),
+                'mensaje' => 'Error al actualizar el artículo: ' . $e->getMessage(),
                 'tipo' => 'alert-danger'
             ]);
         }
