@@ -147,7 +147,7 @@ class InventarioController extends Controller
             'codigo' => 'required|string|max:255',
             'cantidad' => 'required|integer|min:0',
             'empresa_id' => 'nullable|exists:empresas,id',
-            'foto' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'foto' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:1048576', // 1GB = 1048576 KB
         ]);
 
         if ($request->input('lugar') === 'new') {
@@ -288,7 +288,7 @@ class InventarioController extends Controller
             'valor' => 'nullable|numeric',
             'cantidad' => 'required|integer',
             'empresa_id' => 'nullable|exists:empresas,id',
-            'foto' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'foto' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:1048576', // 1GB = 1048576 KB
         ]);
 
         try {
@@ -337,13 +337,13 @@ class InventarioController extends Controller
             }
             $inventario->update($validatedData);
 
-            return redirect()->route('inventario.actualizar')->with([
+            return redirect()->route('inventario.index')->with([
                 'error' => 'Éxito',
                 'mensaje' => 'Artículo actualizado exitosamente',
                 'tipo' => 'alert-success'
             ]);
         } catch (\Exception $e) {
-            return redirect()->route('inventario.actualizar')->with([
+            return redirect()->route('inventario.index')->with([
                 'error' => 'Error',
                 'mensaje' => 'Artículo no se ha actualizado: ' . $e->getMessage(),
                 'tipo' => 'alert-danger'

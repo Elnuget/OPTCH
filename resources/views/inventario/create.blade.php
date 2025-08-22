@@ -140,7 +140,7 @@
                                             </div>
                                             <input type="file" name="foto" id="foto" class="form-control" accept="image/*">
                                         </div>
-                                        <small class="form-text text-muted">FORMATOS PERMITIDOS: JPG, PNG, GIF (MÁX. 2MB)</small>
+                                        <small class="form-text text-muted">FORMATOS PERMITIDOS: JPG, PNG, GIF (MÁX. 1GB)</small>
                                     </div>
                                 </div>
                             </div>

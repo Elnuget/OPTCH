@@ -137,7 +137,7 @@
                                             @endif
                                         </div>
                                     </div>
-                                    <div class="form-group">
+                                    <div class="form-group" style="display: none;">
                                         <label for="valor">Valor</label>
                                         <div class="input-group">
                                             <div class="input-group-prepend">
@@ -146,7 +146,7 @@
                                             <input name="valor" id="valor" type="number" class="form-control" value="{{ $inventario->valor }}" step="0.01">
                                         </div>
                                     </div>
-                                    <div class="form-group">
+                                    <div class="form-group" style="display: none;">
                                         <label for="orden">Orden</label>
                                         <div class="input-group">
                                             <div class="input-group-prepend">
@@ -214,7 +214,7 @@
                                             </div>
                                             <input type="file" name="foto" id="foto" class="form-control" accept="image/*">
                                         </div>
-                                        <small class="form-text text-muted">FORMATOS PERMITIDOS: JPG, PNG, GIF (MÁX. 2MB). DEJE EN BLANCO PARA MANTENER LA FOTO ACTUAL.</small>
+                                        <small class="form-text text-muted">FORMATOS PERMITIDOS: JPG, PNG, GIF (MÁX. 1GB). DEJE EN BLANCO PARA MANTENER LA FOTO ACTUAL.</small>
                                     </div>
                                 </div>
                             </div>
@@ -272,11 +272,6 @@
     <!-- /.card-footer-->
     </div>
 
-@stop
-
-@section('js')
-<script></script>
-    // Agrega un 'event listener' al documento para escuchar eventos de teclado
 @stop
 
 @section('js')
