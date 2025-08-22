@@ -7,8 +7,11 @@
     $mesActual = $hoy->format('m');
     $mesAnoActual = $hoy->format('Y-m');
     
-    // Consulta para cumpleaños sin mensajes enviados en el mes actual
-    $cumpleañerosPendientes = \App\Models\HistorialClinico::whereRaw('MONTH(fecha_nacimiento) = ?', [$mesActual])
+    // Verificar si el usuario es administrador
+    $isUserAdmin = Auth::user() && Auth::user()->is_admin;
+    
+    // Consulta base para cumpleaños sin mensajes enviados en el mes actual
+    $cumpleañerosQuery = \App\Models\HistorialClinico::whereRaw('MONTH(fecha_nacimiento) = ?', [$mesActual])
         ->whereNotNull('celular')
         ->whereRaw('CONCAT(nombres, " ", apellidos) NOT IN (
             SELECT CONCAT(hc.nombres, " ", hc.apellidos) 
@@ -16,14 +19,24 @@
             INNER JOIN mensajes_enviados me ON hc.id = me.historial_id
             WHERE me.tipo = "cumpleanos"
             AND DATE_FORMAT(me.fecha_envio, "%Y-%m") = ?
-        )', [$mesAnoActual])
-        ->count();
+        )', [$mesAnoActual]);
+    
+    // Filtrar por empresas del usuario si no es administrador
+    if (!$isUserAdmin && Auth::user()) {
+        // Obtener IDs de todas las empresas del usuario
+        $empresasIds = Auth::user()->todasLasEmpresas()->pluck('id')->toArray();
+        if (!empty($empresasIds)) {
+            $cumpleañerosQuery->whereIn('empresa_id', $empresasIds);
+        }
+    }
+    
+    $cumpleañerosPendientes = $cumpleañerosQuery->count();
 
-    // Consulta para recordatorios de consulta sin mensajes enviados en el mes actual
+    // Consulta base para recordatorios de consulta sin mensajes enviados en el mes actual
     $inicioMes = $hoy->copy()->startOfMonth();
     $finMes = $hoy->copy()->endOfMonth();
     
-    $consultasPendientes = \App\Models\HistorialClinico::whereNotNull('proxima_consulta')
+    $consultasQuery = \App\Models\HistorialClinico::whereNotNull('proxima_consulta')
         ->whereNotNull('celular')
         ->whereDate('proxima_consulta', '>=', $inicioMes)
         ->whereDate('proxima_consulta', '<=', $finMes)
@@ -33,8 +46,18 @@
             INNER JOIN mensajes_enviados me ON hc.id = me.historial_id
             WHERE me.tipo = "consulta"
             AND DATE_FORMAT(me.fecha_envio, "%Y-%m") = ?
-        )', [$mesAnoActual])
-        ->count();
+        )', [$mesAnoActual]);
+    
+    // Filtrar por empresas del usuario si no es administrador
+    if (!$isUserAdmin && Auth::user()) {
+        // Obtener IDs de todas las empresas del usuario
+        $empresasIds = Auth::user()->todasLasEmpresas()->pluck('id')->toArray();
+        if (!empty($empresasIds)) {
+            $consultasQuery->whereIn('empresa_id', $empresasIds);
+        }
+    }
+    
+    $consultasPendientes = $consultasQuery->count();
 @endphp
 
 <nav class="main-header navbar

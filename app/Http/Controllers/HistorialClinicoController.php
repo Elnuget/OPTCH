@@ -725,10 +725,23 @@ class HistorialClinicoController extends Controller
             $mesActual = now()->format('m');
             $añoActual = now()->format('Y');
             
+            // Verificar si el usuario está asociado a una empresa y no es admin
+            $isUserAdmin = auth()->user()->is_admin;
+            
             // Obtener todos los pacientes que cumplen años en el mes actual
-            $cumpleaneros = HistorialClinico::whereRaw('MONTH(fecha_nacimiento) = ?', [$mesActual])
-                ->orderByRaw('DAY(fecha_nacimiento)')
-                ->get()
+            $query = HistorialClinico::whereRaw('MONTH(fecha_nacimiento) = ?', [$mesActual])
+                ->orderByRaw('DAY(fecha_nacimiento)');
+            
+            // Si el usuario no es admin, filtrar por sus empresas asociadas
+            if (!$isUserAdmin) {
+                // Obtener IDs de todas las empresas del usuario
+                $empresasIds = auth()->user()->todasLasEmpresas()->pluck('id')->toArray();
+                if (!empty($empresasIds)) {
+                    $query->whereIn('empresa_id', $empresasIds);
+                }
+            }
+            
+            $cumpleaneros = $query->get()
                 ->map(function ($paciente) use ($añoActual) {
                     $fechaNacimiento = \Carbon\Carbon::parse($paciente->fecha_nacimiento);
                     $edad = $fechaNacimiento->copy()->addYears($añoActual - $fechaNacimiento->year)->diffInYears(now());
@@ -740,7 +753,9 @@ class HistorialClinicoController extends Controller
                         'fecha_nacimiento' => $fechaNacimiento->format('d/m/Y'),
                         'dia_cumpleanos' => $fechaNacimiento->format('d'),
                         'edad_cumplir' => $edad,
-                        'celular' => $paciente->celular
+                        'celular' => $paciente->celular,
+                        'empresa_id' => $paciente->empresa_id,
+                        'empresa_nombre' => $paciente->empresa ? $paciente->empresa->nombre : 'Sin empresa'
                     ];
                 });
             
@@ -761,12 +776,25 @@ class HistorialClinicoController extends Controller
             // Obtener la fecha actual
             $hoy = now();
             
+            // Verificar si el usuario está asociado a una empresa y no es admin
+            $isUserAdmin = auth()->user()->is_admin;
+            
             // Obtener historiales con próxima consulta en los próximos 7 días
-            $consultas = HistorialClinico::whereNotNull('proxima_consulta')
+            $query = HistorialClinico::whereNotNull('proxima_consulta')
                 ->whereDate('proxima_consulta', '>=', $hoy)
                 ->whereDate('proxima_consulta', '<=', $hoy->copy()->addDays(7))
-                ->orderBy('proxima_consulta')
-                ->get()
+                ->orderBy('proxima_consulta');
+                
+            // Si el usuario no es admin, filtrar por sus empresas asociadas
+            if (!$isUserAdmin) {
+                // Obtener IDs de todas las empresas del usuario
+                $empresasIds = auth()->user()->todasLasEmpresas()->pluck('id')->toArray();
+                if (!empty($empresasIds)) {
+                    $query->whereIn('empresa_id', $empresasIds);
+                }
+            }
+            
+            $consultas = $query->get()
                 ->map(function ($historial) use ($hoy) {
                     $proximaConsulta = \Carbon\Carbon::parse($historial->proxima_consulta);
                     $diasRestantes = $hoy->diffInDays($proximaConsulta, false);
@@ -779,7 +807,9 @@ class HistorialClinicoController extends Controller
                         'fecha_consulta' => $proximaConsulta->format('d/m/Y'),
                         'dias_restantes' => max(0, $diasRestantes),
                         'ultima_consulta' => $historial->fecha ? \Carbon\Carbon::parse($historial->fecha)->format('d/m/Y') : 'SIN CONSULTAS',
-                        'motivo_consulta' => $historial->motivo_consulta
+                        'motivo_consulta' => $historial->motivo_consulta,
+                        'empresa_id' => $historial->empresa_id,
+                        'empresa_nombre' => $historial->empresa ? $historial->empresa->nombre : 'Sin empresa'
                     ];
                 })
                 ->sortBy('dias_restantes')
