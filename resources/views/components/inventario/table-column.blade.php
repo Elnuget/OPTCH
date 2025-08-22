@@ -1,6 +1,6 @@
 @props(['columna', 'items', 'empresas'])
 
-<div class="col-md-6 mb-4">
+<div class="col-md-12 mb-4">
     <div class="card h-100">
         <div class="card-header bg-secondary text-white">
             <h5 class="card-title mb-0 d-flex justify-content-between align-items-center">
