@@ -219,7 +219,6 @@
                             <td>EMPRESA</td> <!-- Nueva columna para Empresa -->
                             <!-- Removed Paciente column -->
                             <td>MÉTODO DE PAGO</td>
-                            <td>SALDO</td>
                             <td>PAGO</td>
                             <td style="display: none;">TC</td>
                             <td>ACCIONES</td>
@@ -235,7 +234,6 @@
                                 <td>{{ $pago->pedido->empresa ? $pago->pedido->empresa->nombre : 'N/A' }}</td> <!-- Empresa Asociada -->
                                 <!-- Removed Paciente data -->
                                 <td>{{ $pago->mediodepago->medio_de_pago }}</td>
-                                <td>${{ number_format($pago->pedido->saldo, 0, ',', '.') }}</td> <!-- Updated to access saldo from pedido -->
                                 <td>${{ number_format($pago->pago, 0, ',', '.') }}</td>
                                 <td style="display: none;">{{ $pago->TC ? 'SÍ' : 'NO' }}</td>
                                 <td>
