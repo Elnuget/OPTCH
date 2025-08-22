@@ -1,10 +1,23 @@
 @extends('adminlte::page')
 
-@section('title', 'Inventario')
+@section('title', 'Ver Artículo - Inventario')
 
 @section('content_header')
-    <h1>Inventario</h1>
-    <p>Administración de Articulo</p>
+    <h1>VER ARTÍCULO</h1>
+    <p>DETALLE DEL ARTÍCULO DE INVENTARIO</p>
+    @if (session('error'))
+        <div class="alert {{ session('tipo') }} alert-dismissible fade show" role="alert">
+            <strong>{{ session('error') }}</strong> {{ session('mensaje') }}
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+            </button>
+        </div>
+    @endif
+@stop
+
+@section('content_header')
+    <h1>VER ARTÍCULO</h1>
+    <p>DETALLE DEL ARTÍCULO DE INVENTARIO</p>
     @if (session('error'))
         <div class="alert {{ session('tipo') }} alert-dismissible fade show" role="alert">
             <strong>{{ session('error') }}</strong> {{ session('mensaje') }}
@@ -16,151 +29,236 @@
 @stop
 
 @section('content')
+    <style>
+        /* Convertir todo el texto a mayúsculas */
+        body, 
+        .content-wrapper, 
+        .main-header, 
+        .main-sidebar, 
+        .card-title,
+        .info-box-text,
+        .info-box-number,
+        .custom-select,
+        .btn,
+        label,
+        input,
+        select,
+        option,
+        datalist,
+        datalist option,
+        .form-control,
+        p,
+        h1, h2, h3, h4, h5, h6,
+        th,
+        td,
+        span,
+        a,
+        .dropdown-item,
+        .alert,
+        .modal-title,
+        .modal-body p,
+        .modal-content,
+        .card-header,
+        .card-footer,
+        button,
+        .close,
+        strong {
+            text-transform: uppercase !important;
+        }
 
+        /* Estilos para campos de solo lectura */
+        .readonly-field {
+            background-color: #f8f9fa !important;
+            border: 1px solid #e9ecef !important;
+            color: #495057 !important;
+            cursor: not-allowed !important;
+        }
+    </style>
+
+    <br>
     <div class="card">
         <div class="card-header">
-            <h3 class="card-title">Resumen de Inventario</h3>
-
+            <h3 class="card-title">VER ARTÍCULO</h3>
             <div class="card-tools">
-                <button type="button" class="btn btn-tool" data-card-widget="collapse" data-toggle="tooltip"
-                    title="Collapse">
-                    <i class="fas fa-minus"></i></button>
+                <button type="button" class="btn btn-tool" data-card-widget="collapse" data-toggle="tooltip" title="Collapse">
+                    <i class="fas fa-minus"></i>
+                </button>
                 <button type="button" class="btn btn-tool" data-card-widget="remove" data-toggle="tooltip" title="Remove">
-                    <i class="fas fa-times"></i></button>
+                    <i class="fas fa-times"></i>
+                </button>
             </div>
         </div>
         <div class="card-body">
-            <div class="row">
-                <div class="col-6">
-                    <p><strong>ID inventario:</strong> {{ $inventario->id }}</p>
-                    <p><strong>Fecha:</strong> {{ $inventario->fecha }}</p>
-                    <p><strong>Lugar:</strong> {{ $inventario->lugar }}</p>
-                    <p><strong>Columna:</strong> {{ $inventario->columna }}</p>
-                    <p><strong>Número:</strong> {{ $inventario->numero }}</p>
+            <div class="col-md-12">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="card card-primary">
+                            <div class="card-header">
+                                <h3 class="card-title">Información del Artículo</h3>
+                            </div>
+                            <div class="card-body">
+                                <div class="form-group">
+                                    <label for="codigo">Código</label>
+                                    <div class="input-group">
+                                        <div class="input-group-prepend">
+                                            <span class="input-group-text"><i class="fas fa-barcode"></i></span>
+                                        </div>
+                                        <input type="text" class="form-control readonly-field text-uppercase" value="{{ $inventario->codigo }}" readonly>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label for="cantidad">Cantidad</label>
+                                    <div class="input-group">
+                                        <div class="input-group-prepend">
+                                            <span class="input-group-text"><i class="fas fa-cubes"></i></span>
+                                        </div>
+                                        <input type="text" class="form-control readonly-field" value="{{ $inventario->cantidad }}" readonly>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label for="fecha">Fecha</label>
+                                    <div class="input-group">
+                                        <div class="input-group-prepend">
+                                            <span class="input-group-text"><i class="fas fa-calendar-alt"></i></span>
+                                        </div>
+                                        <input type="text" class="form-control readonly-field" value="{{ $inventario->fecha }}" readonly>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label for="empresa">SUCURSAL</label>
+                                    <div class="input-group">
+                                        <div class="input-group-prepend">
+                                            <span class="input-group-text"><i class="fas fa-building"></i></span>
+                                        </div>
+                                        <input type="text" class="form-control readonly-field" value="{{ $inventario->empresa ? $inventario->empresa->nombre : 'SIN ASIGNAR' }}" readonly>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label for="valor">Valor</label>
+                                    <div class="input-group">
+                                        <div class="input-group-prepend">
+                                            <span class="input-group-text"><i class="fas fa-dollar-sign"></i></span>
+                                        </div>
+                                        <input type="text" class="form-control readonly-field" value="{{ $inventario->valor ?? 'NO ESPECIFICADO' }}" readonly>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label for="orden">Orden</label>
+                                    <div class="input-group">
+                                        <div class="input-group-prepend">
+                                            <span class="input-group-text"><i class="fas fa-sort-numeric-down"></i></span>
+                                        </div>
+                                        <input type="text" class="form-control readonly-field" value="{{ $inventario->orden ?? 'SIN ORDEN' }}" readonly>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card card-info">
+                            <div class="card-header">
+                                <h3 class="card-title">Ubicación del Artículo</h3>
+                            </div>
+                            <div class="card-body">
+                                <div class="form-group">
+                                    <label for="lugar">Lugar</label>
+                                    <div class="input-group">
+                                        <div class="input-group-prepend">
+                                            <span class="input-group-text"><i class="fas fa-map-marker-alt"></i></span>
+                                        </div>
+                                        <input type="text" class="form-control readonly-field" value="{{ $inventario->lugar }}" readonly>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label for="columna">Columna</label>
+                                    <div class="input-group">
+                                        <div class="input-group-prepend">
+                                            <span class="input-group-text"><i class="fas fa-columns"></i></span>
+                                        </div>
+                                        <input type="text" class="form-control readonly-field" value="{{ $inventario->columna }}" readonly>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label for="numero">Número</label>
+                                    <div class="input-group">
+                                        <div class="input-group-prepend">
+                                            <span class="input-group-text"><i class="fas fa-sort-numeric-down"></i></span>
+                                        </div>
+                                        <input type="text" class="form-control readonly-field" value="{{ $inventario->numero }}" readonly>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label for="foto">FOTO DEL ARTÍCULO</label>
+                                    @if($inventario->foto)
+                                        <div class="text-center">
+                                            <img src="{{ asset($inventario->foto) }}" alt="Foto del artículo {{ $inventario->codigo }}" class="img-thumbnail" style="max-height: 300px; cursor: pointer;" data-toggle="modal" data-target="#fotoModal">
+                                            <p class="text-muted small mt-2">CLIC EN LA IMAGEN PARA AMPLIAR</p>
+                                        </div>
+                                    @else
+                                        <div class="text-center">
+                                            <div class="alert alert-info">
+                                                <i class="fas fa-camera fa-3x mb-2"></i>
+                                                <p class="mb-0">SIN FOTO DISPONIBLE</p>
+                                            </div>
+                                        </div>
+                                    @endif
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <div class="col-6">
-                    <p><strong>Código:</strong> {{ $inventario->codigo }}</p>
-                    <p><strong>Valor:</strong> {{ $inventario->valor }}</p>
-                    <p><strong>Cantidad:</strong> {{ $inventario->cantidad }}</p>
-                    <p><strong>Orden:</strong> {{ $inventario->orden }}</p>
-                    @if($inventario->foto)
-                        <p><strong>Foto:</strong></p>
-                        <img src="{{ asset($inventario->foto) }}" alt="Foto del artículo {{ $inventario->codigo }}" class="img-thumbnail" style="max-height: 200px;">
-                    @else
-                        <p><strong>Foto:</strong> Sin foto</p>
-                    @endif
+
+                <div class="form-group mt-3">
+                    <a href="{{ route('inventario.edit', $inventario->id) }}" class="btn btn-warning">
+                        <i class="fas fa-edit"></i> Editar Artículo
+                    </a>
+                    <a href="{{ route('inventario.index') }}" class="btn btn-secondary">
+                        <i class="fas fa-list"></i> Volver al Listado
+                    </a>
                 </div>
+
+                <!-- Modal para ampliar la foto -->
+                @if($inventario->foto)
+                    <div class="modal fade" id="fotoModal" tabindex="-1" role="dialog" aria-labelledby="fotoModalLabel" aria-hidden="true">
+                        <div class="modal-dialog modal-lg" role="document">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title" id="fotoModalLabel">FOTO DEL ARTÍCULO: {{ $inventario->codigo }}</h5>
+                                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                        <span aria-hidden="true">&times;</span>
+                                    </button>
+                                </div>
+                                <div class="modal-body text-center">
+                                    <img src="{{ asset($inventario->foto) }}" alt="Foto del artículo {{ $inventario->codigo }}" class="img-fluid">
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                                        <i class="fas fa-times"></i> Cerrar
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                @endif
             </div>
         </div>
     </div>
-    <div class="card">
-        <div class="card-body">
-            <table id="example" class="table table-striped table-bordered">
-                <thead>
-                    <tr>
-                        <td>ID</td>
-                        <td>Movimiento</td>
-                        <td>Ver</td>
-                        <td>Codigo</td>
-                        <td>Descripcion</td>
-                        <td>Cantidad</td>
-                        <td>Fecha</td>
-                        <td>Usuario</td>
-                    </tr>
-                </thead>
-                <tbody>
-                    {{--  @foreach ($historial as $h) --}}
-                    {{-- <tr>
-                            <td>{{ $h->id }}</td>
-                            <td>{{ $h->Movimiento->tipo_movimiento }}</td>
-                            <td>
-                                @switch($h->Movimiento->id)
-                                    @case(1)
-                                        <a type="button" class="btn btn-success"
-                                            href="{{ route('recepciones.view', $h->id_movimiento) }}">Recepcion</a>
-                                    @break
-
-                                    @case(2)
-                                        <a type="button" class="btn btn-success"
-                                            href="{{ route('ventas.show', $h->id_movimiento) }}">Venta</a>
-                                    @break
-
-                                    @case(4)
-                                        <a type="button" class="btn btn-success"
-                                            href="{{ route('ajustesdeinventario.view', $h->id_movimiento) }}">Ajuste</a>
-                                    @break
-
-                                    @default
-                                        <a type="button" class="btn btn-success" href="">Datos</a>
-                                @endswitch
-                            </td>
-                            <td>{{ $h->Articulo->cod_interno }}</td>
-                            <td>{{ $h->Articulo->descripcion }}</td>
-                            <td>{{ $h->cantidad }}</td>
-                            <td> @datetime($h->created_at) </td>
-                            <td>{{ $h->User->name }}</td>
-                        </tr> --}}
-                    {{--  @endforeach --}}
-                </tbody>
-            </table>
-            <br>
-        </div>
+    <!-- /.card-body -->
+    <div class="card-footer">
+        VER ARTÍCULO - ID: {{ $inventario->id }}
     </div>
+    <!-- /.card-footer-->
 @stop
 
 @section('js')
-    <script>
-        $(document).ready(function() {
-            $("#example").DataTable({
-                order: [
-                    [0, "desc"]
-                ],
-                columnDefs: [{
-                    targets: [2],
-                    visible: true,
-                    searchable: true,
-                }, ],
-                dom: 'Bfrtip',
-                buttons: [
-                    'excelHtml5',
-                    'csvHtml5',
-                    {
-                        extend: 'print',
-                        text: 'Imprimir',
-                        autoPrint: true,
-                        exportOptions: {
-                            columns: [0, 1, 3, 4, 5, 6, 7]
-                        },
-                        customize: function(win) {
-                            $(win.document.body).css('font-size', '16pt');
-                            $(win.document.body).find('table')
-                                .addClass('compact')
-                                .css('font-size', 'inherit');
-                        }
-                    },
-                    {
-                        extend: 'pdfHtml5',
-                        text: 'PDF',
-                        filename: 'historial.pdf',
-                        title: 'Historial {{ $inventario->codigo }}',
-                        pageSize: 'LETTER',
-                        exportOptions: {
-                            columns: [0, 1, 3, 4, 5, 6, 7]
-                        }
-                    }
-                ],
-                language: {
-                    url: "//cdn.datatables.net/plug-ins/1.10.16/i18n/Spanish.json",
-                },
-            });
-        });
-        // Agrega un 'event listener' al documento para escuchar eventos de teclado
-        document.addEventListener('keydown', function(event) {
-            if (event.key === "Home") { // Verifica si la tecla presionada es 'Inicio'
-                window.location.href = '/dashboard'; // Redirecciona a '/dashboard'
-            }
-        });
-    </script>
+<script>
+document.addEventListener('keydown', function(event) {
+    if (event.key === "Home") { // Verifica si la tecla presionada es 'Inicio'
+        window.location.href = '/dashboard'; // Redirecciona a '/dashboard'
+    }
+});
+</script>
+
 @stop
 
 @section('footer')
