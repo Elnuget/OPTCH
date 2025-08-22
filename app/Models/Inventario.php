@@ -20,7 +20,8 @@ class Inventario extends Model
         'codigo',
         'cantidad',
         'orden',
-        'empresa_id'
+        'empresa_id',
+        'foto'
     ];
 
     protected $dates = ['deleted_at'];

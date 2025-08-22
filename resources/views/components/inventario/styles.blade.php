@@ -231,5 +231,47 @@
         .empty-space td.editable:hover {
             background-color: #dee2e6;
         }
+
+        /* Estilos para botones de acción en las tablas */
+        .table .btn-group {
+            gap: 0.25rem;
+            flex-wrap: nowrap;
+        }
+
+        .table .btn-group .btn {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.75rem;
+            line-height: 1.2;
+            border-radius: 0.25rem;
+        }
+
+        /* Ajustes específicos para los iconos de los botones */
+        .table .btn-group .btn i {
+            font-size: 0.75rem;
+        }
+
+        /* Botones responsivos en tablas */
+        @media (max-width: 768px) {
+            .table .btn-group {
+                flex-direction: column;
+                gap: 0.1rem;
+            }
+            
+            .table .btn-group .btn {
+                padding: 0.2rem 0.4rem;
+                font-size: 0.7rem;
+            }
+            
+            .table .btn-group .btn i {
+                font-size: 0.7rem;
+            }
+        }
+
+        /* Mejorar la visualización en pantallas pequeñas */
+        @media (max-width: 576px) {
+            .table .btn-group {
+                justify-content: center;
+            }
+        }
     </style>
 @endpush 

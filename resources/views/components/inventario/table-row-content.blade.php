@@ -34,19 +34,44 @@
     <input type="number" class="form-control edit-input" style="display: none;" value="{{ $item->cantidad }}">
 </td>
 <td class="text-center">
-    <div class="btn-group">
+    @if($item->foto)
+        <img src="{{ asset($item->foto) }}" alt="Foto de {{ $item->codigo }}" class="img-thumbnail" style="max-height: 50px; max-width: 50px; cursor: pointer;" onclick="mostrarFotoModal('{{ asset($item->foto) }}', '{{ $item->codigo }}')">
+    @else
+        <span class="text-muted">Sin foto</span>
+    @endif
+</td>
+<td class="text-center">
+    <div class="btn-group" role="group" aria-label="Acciones del artículo">
+        <!-- Botón Ver -->
+        <a href="{{ route('inventario.show', $item->id) }}" 
+           class="btn btn-sm btn-outline-info" 
+           title="Ver detalles del artículo {{ $item->codigo }}"
+           data-toggle="tooltip">
+            <i class="fa fa-eye"></i>
+        </a>
+        
+        <!-- Botón Editar -->
+        <a href="{{ route('inventario.edit', $item->id) }}" 
+           class="btn btn-sm btn-outline-primary" 
+           title="Editar artículo {{ $item->codigo }}"
+           data-toggle="tooltip">
+            <i class="fa fa-edit"></i>
+        </a>
+        
+        <!-- Botón Eliminar (solo para admins) -->
         @can('admin')
         <form action="{{ route('inventario.destroy', $item->id) }}" method="POST" class="d-inline">
             @csrf
             @method('DELETE')
             <input type="hidden" name="fecha" value="{{ request('fecha') }}">
-            <button type="submit" class="btn btn-sm btn-outline-danger" title="Eliminar"
-                    onclick="return confirm('¿Está seguro de que desea eliminar este artículo?')">
+            <button type="submit" 
+                    class="btn btn-sm btn-outline-danger" 
+                    title="Eliminar artículo {{ $item->codigo }}"
+                    data-toggle="tooltip"
+                    onclick="return confirm('¿Está seguro de que desea eliminar el artículo {{ $item->codigo }}?')">
                 <i class="fa fa-trash"></i>
             </button>
         </form>
-        @else
-        <span class="text-muted">-</span>
         @endcan
     </div>
 </td>

@@ -1,6 +1,8 @@
 /node_modules
 /public/hot
 /public/storage
+/public/uploads/inventario/*
+!/public/uploads/inventario/.gitkeep
 /storage/*.key
 /vendor
 .env

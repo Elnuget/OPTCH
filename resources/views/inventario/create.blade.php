@@ -76,7 +76,7 @@
         </div>
         <div class="card-body">
             <div class="col-md-12">
-                <form role="form" action="{{ route('inventario.store') }}" method="POST">
+                <form role="form" action="{{ route('inventario.store') }}" method="POST" enctype="multipart/form-data">
                     @csrf
 
                     <div class="row">
@@ -131,6 +131,16 @@
                                                 <input type="hidden" name="empresa_id" value="{{ $userEmpresaId }}">
                                             @endif
                                         </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="foto">FOTO DEL ARTÍCULO</label>
+                                        <div class="input-group">
+                                            <div class="input-group-prepend">
+                                                <span class="input-group-text"><i class="fas fa-camera"></i></span>
+                                            </div>
+                                            <input type="file" name="foto" id="foto" class="form-control" accept="image/*">
+                                        </div>
+                                        <small class="form-text text-muted">FORMATOS PERMITIDOS: JPG, PNG, GIF (MÁX. 2MB)</small>
                                     </div>
                                 </div>
                             </div>

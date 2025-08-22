@@ -774,6 +774,48 @@
                     }
                 });
             }
+            
+            // Función global para mostrar el modal de fotos
+            window.mostrarFotoModal = function(fotoUrl, codigo) {
+                // Crear modal si no existe
+                if (!document.getElementById('fotoModal')) {
+                    const modalHtml = `
+                        <div class="modal fade" id="fotoModal" tabindex="-1" role="dialog" aria-labelledby="fotoModalLabel" aria-hidden="true">
+                            <div class="modal-dialog modal-lg" role="document">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title" id="fotoModalLabel">FOTO DEL ARTÍCULO</h5>
+                                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                            <span aria-hidden="true">&times;</span>
+                                        </button>
+                                    </div>
+                                    <div class="modal-body text-center">
+                                        <img id="fotoModalImg" src="" alt="" class="img-fluid" style="max-height: 70vh;">
+                                        <p id="fotoModalCodigo" class="mt-2 text-muted"></p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    $('body').append(modalHtml);
+                }
+                
+                // Actualizar contenido del modal
+                $('#fotoModalImg').attr('src', fotoUrl);
+                $('#fotoModalImg').attr('alt', 'Foto del artículo ' + codigo);
+                $('#fotoModalCodigo').text('CÓDIGO: ' + codigo);
+                
+                // Mostrar modal
+                $('#fotoModal').modal('show');
+            }
+            
+            // Inicializar tooltips de Bootstrap
+            $(function () {
+                $('[data-toggle="tooltip"]').tooltip({
+                    placement: 'top',
+                    container: 'body'
+                });
+            });
         });
     </script>
 @endpush 

@@ -43,6 +43,12 @@
                     <p><strong>Valor:</strong> {{ $inventario->valor }}</p>
                     <p><strong>Cantidad:</strong> {{ $inventario->cantidad }}</p>
                     <p><strong>Orden:</strong> {{ $inventario->orden }}</p>
+                    @if($inventario->foto)
+                        <p><strong>Foto:</strong></p>
+                        <img src="{{ asset($inventario->foto) }}" alt="Foto del artículo {{ $inventario->codigo }}" class="img-thumbnail" style="max-height: 200px;">
+                    @else
+                        <p><strong>Foto:</strong> Sin foto</p>
+                    @endif
                 </div>
             </div>
         </div>

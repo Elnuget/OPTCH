@@ -147,10 +147,19 @@ class InventarioController extends Controller
             'codigo' => 'required|string|max:255',
             'cantidad' => 'required|integer|min:0',
             'empresa_id' => 'nullable|exists:empresas,id',
+            'foto' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
 
         if ($request->input('lugar') === 'new') {
             $validatedData['lugar'] = $request->input('new_lugar');
+        }
+        
+        // Manejar la subida de la foto
+        if ($request->hasFile('foto')) {
+            $image = $request->file('foto');
+            $filename = time() . '_' . $image->getClientOriginalName();
+            $image->move(public_path('uploads/inventario'), $filename);
+            $validatedData['foto'] = 'uploads/inventario/' . $filename;
         }
         
         // Restricción para usuarios no administradores
@@ -279,10 +288,24 @@ class InventarioController extends Controller
             'valor' => 'nullable|numeric',
             'cantidad' => 'required|integer',
             'empresa_id' => 'nullable|exists:empresas,id',
+            'foto' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
 
         try {
             $inventario = Inventario::findOrFail($id);
+            
+            // Manejar la subida de la foto
+            if ($request->hasFile('foto')) {
+                // Eliminar la foto anterior si existe
+                if ($inventario->foto && file_exists(public_path($inventario->foto))) {
+                    unlink(public_path($inventario->foto));
+                }
+                
+                $image = $request->file('foto');
+                $filename = time() . '_' . $image->getClientOriginalName();
+                $image->move(public_path('uploads/inventario'), $filename);
+                $validatedData['foto'] = 'uploads/inventario/' . $filename;
+            }
             
             // Restricción para usuarios no administradores
             $user = auth()->user();

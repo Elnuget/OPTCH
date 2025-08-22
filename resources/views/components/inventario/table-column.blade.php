@@ -32,13 +32,14 @@
             <table class="table table-hover mb-0" style="width: 100%">
                 <thead>
                     <tr>
-                        <th style="width: 10%">Número</th>
-                        <th style="width: 15%">Lugar</th>
-                        <th style="width: 10%">Columna</th>
-                        <th style="width: 25%">Código</th>
-                        <th style="width: 15%">Empresa</th>
-                        <th style="width: 10%">Cantidad</th>
-                        <th style="width: 15%">Acciones</th>
+                        <th style="width: 8%">Número</th>
+                        <th style="width: 10%">Lugar</th>
+                        <th style="width: 8%">Columna</th>
+                        <th style="width: 18%">Código</th>
+                        <th style="width: 10%">Empresa</th>
+                        <th style="width: 8%">Cantidad</th>
+                        <th style="width: 12%">Foto</th>
+                        <th style="width: 26%">Acciones</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -77,13 +78,16 @@
                             <input type="number" class="form-control edit-input" style="display: none;" value="1">
                         </td>
                         <td class="text-center">
+                            <span class="text-muted">Sin foto</span>
+                        </td>
+                        <td class="text-center">
                             <span class="text-muted">-</span>
                         </td>
                     </tr>
                 </tbody>
                 <tfoot>
                     <tr>
-                        <td colspan="7" class="text-center">
+                        <td colspan="8" class="text-center">
                             <button type="button" class="btn btn-sm btn-success add-row-btn" data-columna="{{ $columna }}">
                                 <i class="fas fa-plus"></i> AGREGAR ARTÍCULO
                             </button>
