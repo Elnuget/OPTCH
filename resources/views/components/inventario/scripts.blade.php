@@ -1,6 +1,9 @@
 @push('js')
     <script>
         $(document).ready(function() {
+            // Limpiar cualquier instancia existente de DataTables al inicio
+            $.fn.dataTable.ext.errMode = 'none'; // Silenciar errores de DataTables
+            
             // Función para guardar el estado de las tablas y la posición del scroll
             function saveState() {
                 // Guardar qué tablas están expandidas
@@ -38,77 +41,113 @@
             // Restaurar estado después de cargar
             restoreState();
 
+            // Variable para controlar la inicialización de DataTables
+            let isInitializingDataTables = false;
+            
             // Función para inicializar DataTables de forma segura
             function initializeDataTables() {
-                // Destruir instancias existentes de DataTables antes de reinicializar
-                $('.table').each(function() {
-                    if ($.fn.DataTable.isDataTable(this)) {
-                        $(this).DataTable().destroy();
-                    }
-                });
-
-                // Esperar un momento para que el DOM se estabilice
-                setTimeout(function() {
+                // Evitar múltiples inicializaciones simultáneas
+                if (isInitializingDataTables) {
+                    return;
+                }
+                
+                isInitializingDataTables = true;
+                
+                try {
+                    // Destruir instancias existentes de DataTables antes de reinicializar
                     $('.table').each(function() {
-                        const $table = $(this);
-                        
-                        // Verificar que la tabla tenga la estructura correcta
-                        if ($table.find('thead tr th').length > 0 && $table.find('tbody tr').length > 0) {
+                        if ($.fn.DataTable.isDataTable(this)) {
                             try {
-                                // Asegurar que todas las filas tengan el mismo número de celdas
-                                const expectedCols = $table.find('thead tr th').length;
-                                $table.find('tbody tr').each(function() {
-                                    const actualCols = $(this).find('td').length;
-                                    if (actualCols !== expectedCols) {
-                                        // Agregar celdas vacías si faltan
-                                        for (let i = actualCols; i < expectedCols; i++) {
-                                            $(this).append('<td></td>');
-                                        }
-                                    }
-                                });
-
-                                // Inicializar DataTable solo si la estructura es válida
-                                $table.DataTable({
-                                    dom: '<"row"<"col-12"f>>' +
-                                         '<"row"<"col-12"t>>',
-                                    ordering: true,
-                                    searching: true,
-                                    paging: false,
-                                    info: false,
-                                    responsive: false, // Desactivar responsive para evitar conflictos
-                                    autoWidth: false,
-                                    language: {
-                                        search: "Buscar:",
-                                        zeroRecords: "No se encontraron registros coincidentes",
-                                        searchPlaceholder: "Buscar en esta columna..."
-                                    },
-                                    columnDefs: [
-                                        {
-                                            targets: 0, // Primera columna (NÚMERO)
-                                            type: 'num',
-                                        }
-                                    ],
-                                    // Guardar estado cuando se dibuja la tabla
-                                    drawCallback: function() {
-                                        saveState();
-                                    }
-                                });
-                            } catch (error) {
-                                console.warn('Error inicializando DataTable:', error);
+                                $(this).DataTable().destroy();
+                            } catch (e) {
+                                console.warn('Error al destruir DataTable:', e);
                             }
                         }
                     });
-                }, 100);
+
+                    // Esperar un momento para que el DOM se estabilice
+                    setTimeout(function() {
+                        $('.table').each(function() {
+                            const $table = $(this);
+                            
+                            // Verificar que la tabla tenga la estructura correcta
+                            if ($table.find('thead tr th').length > 0 && $table.find('tbody tr').length > 0) {
+                                try {
+                                    // Verificar si ya está inicializada
+                                    if ($.fn.DataTable.isDataTable(this)) {
+                                        return; // Saltar si ya está inicializada
+                                    }
+                                    
+                                    // Asegurar que todas las filas tengan el mismo número de celdas
+                                    const expectedCols = $table.find('thead tr th').length;
+                                    $table.find('tbody tr').each(function() {
+                                        const actualCols = $(this).find('td').length;
+                                        if (actualCols !== expectedCols) {
+                                            // Agregar celdas vacías si faltan
+                                            for (let i = actualCols; i < expectedCols; i++) {
+                                                $(this).append('<td></td>');
+                                            }
+                                        }
+                                    });
+
+                                    // Inicializar DataTable solo si la estructura es válida
+                                    $table.DataTable({
+                                        dom: '<"row"<"col-12"f>>' +
+                                             '<"row"<"col-12"t>>',
+                                        ordering: true,
+                                        searching: true,
+                                        paging: false,
+                                        info: false,
+                                        responsive: false, // Desactivar responsive para evitar conflictos
+                                        autoWidth: false,
+                                        language: {
+                                            search: "Buscar:",
+                                            zeroRecords: "No se encontraron registros coincidentes",
+                                            searchPlaceholder: "Buscar en esta columna..."
+                                        },
+                                        columnDefs: [
+                                            {
+                                                targets: 0, // Primera columna (NÚMERO)
+                                                type: 'num',
+                                            }
+                                        ],
+                                        // Guardar estado cuando se dibuja la tabla
+                                        drawCallback: function() {
+                                            saveState();
+                                        }
+                                    });
+                                } catch (error) {
+                                    console.warn('Error inicializando DataTable:', error);
+                                }
+                            }
+                        });
+                        
+                        // Resetear flag después de completar
+                        isInitializingDataTables = false;
+                    }, 100);
+                } catch (error) {
+                    console.error('Error en initializeDataTables:', error);
+                    isInitializingDataTables = false;
+                }
             }
 
             // Inicializar DataTables
             initializeDataTables();
 
+            // Variable para debounce de reinicialización
+            let reinitializeTimeout;
+            
+            // Función debounced para reinicializar DataTables
+            function debounceReinitialize(delay = 200) {
+                clearTimeout(reinitializeTimeout);
+                reinitializeTimeout = setTimeout(function() {
+                    initializeDataTables();
+                }, delay);
+            }
+
             // Reinicializar DataTables cuando se muestran los collapse
             $('.collapse').on('shown.bs.collapse', function () {
-                setTimeout(function() {
-                    initializeDataTables();
-                }, 150);
+                debounceReinitialize(300);
             });
 
             // Variable para controlar el estado de expansión
@@ -120,10 +159,8 @@
                 if (allExpanded) {
                     $('.collapse').collapse('show');
                     $('.transition-icon').addClass('fa-rotate-180');
-                    // Reinicializar DataTables después de expandir
-                    setTimeout(function() {
-                        initializeDataTables();
-                    }, 500);
+                    // Reinicializar DataTables después de expandir con debounce
+                    debounceReinitialize(500);
                 } else {
                     $('.collapse').collapse('hide');
                     $('.transition-icon').removeClass('fa-rotate-180');
@@ -138,30 +175,41 @@
                 $('.transition-icon').addClass('fa-rotate-180');
                 allExpanded = true;
                 
-                // Reinicializar DataTables después de expandir
+                // Reinicializar DataTables después de expandir con debounce
+                debounceReinitialize(500);
+                
+                // Realizar la búsqueda después de reinicializar (con delay adicional)
                 setTimeout(function() {
-                    initializeDataTables();
-                    
-                    // Realizar la búsqueda después de reinicializar
                     let searchTerm = $('#busquedaGlobal').val().toLowerCase();
                     $('.table').each(function() {
                         if ($.fn.DataTable.isDataTable(this)) {
                             $(this).DataTable().search(searchTerm).draw();
                         }
                     });
-                }, 500);
+                }, 700);
                 
                 saveState();
             });
 
-            // Búsqueda global
+            // Variable para debounce de búsqueda
+            let searchTimeout;
+            
+            // Búsqueda global con debounce
             $('#busquedaGlobal').on('keyup', function() {
+                clearTimeout(searchTimeout);
                 let searchTerm = $(this).val().toLowerCase();
-                $('.table').each(function() {
-                    if ($.fn.DataTable.isDataTable(this)) {
-                        $(this).DataTable().search(searchTerm).draw();
-                    }
-                });
+                
+                searchTimeout = setTimeout(function() {
+                    $('.table').each(function() {
+                        if ($.fn.DataTable.isDataTable(this)) {
+                            try {
+                                $(this).DataTable().search(searchTerm).draw();
+                            } catch (e) {
+                                console.warn('Error en búsqueda DataTable:', e);
+                            }
+                        }
+                    });
+                }, 300);
             });
 
             // Manejar la rotación del icono en los headers de las tarjetas
